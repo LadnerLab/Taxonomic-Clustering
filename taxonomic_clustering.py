@@ -98,8 +98,9 @@ def write_outputs( out_directory, cluster_dict, threshold ):
                                 sequence_list[ start:end ],
                                 cluster_key + "_" + str( index + 1 ) + "_.fasta"
                               )
-            start += seqs_per_file 
-            end += seqs_per_file
+            start += seqs_per_file + overflow
+            end += seqs_per_file 
+            overflow = 0
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
@@ -110,6 +111,7 @@ def add_program_options( option_parser ):
     option_parser.add_option( '-s', '--start', action = "append", 
                               help = ( "Level of the taxonomic hierarchy at which to begin "
                                        "clustering. If this option is given multiple times, "
+                                       "e.g. -s family -s phylum, "
                                        "they will be processed in order of taxonomic rank, e.g., "
                                        "superkingdom, kingdom, phylum, class, order, family, genus, species [ family ]"
 
