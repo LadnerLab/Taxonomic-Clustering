@@ -66,6 +66,9 @@ def add_program_options( option_parser ):
     option_parser.add_option( '-s', '--start', default = 'family',
                               help = "Level of the taxonomic hierarchy at which to begin clustering. [family]"
                             )
+    option_parser.add_option( '-o', '--output', default = 'tax_out',
+                              help = "Directory to write grouped fasta files to, each file contains one rank-level grouping"
+                            )
 
 if __name__ == '__main__':
     main()
