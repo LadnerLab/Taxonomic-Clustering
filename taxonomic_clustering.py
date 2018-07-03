@@ -53,8 +53,6 @@ def main():
                     clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
                     del sequence_dict[ current_name ]
 
-                    if len( clusters[ current_rank_data ] ) > options.number:
-                        break
 
     write_outputs( options.output, clusters, options.number )
                    
@@ -72,10 +70,11 @@ def write_outputs( out_directory, cluster_dict, threshold ):
 
         overflow = len( cluster_value ) // threshold
         num_lists = overflow if overflow > 0 else 1
+        overflow = len( cluster_value ) % threshold 
         seqs_per_file = len( sequence_list ) // num_lists
 
         start = 0
-        end = seqs_per_file
+        end = seqs_per_file + overflow
         for index in range( num_lists ):
             oligo.write_fastas( names_list[ start:end ],
                                 sequence_list[ start:end ],
