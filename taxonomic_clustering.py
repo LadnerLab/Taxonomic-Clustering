@@ -22,9 +22,14 @@ def main():
         print( "Taxonomic lineage file must be provided." )
         sys.exit() 
 
-    names, sequences = oligo.read_fasta_lists( options.query )
-    current_rank = Rank[ options.start.upper() ]
+    current_rank = oligo.Rank[ options.start.upper() ]
+    if options.start is None:
+        current_rank = oligo.Rank[ 'FAMILY' ]
 
+
+    names, sequences = oligo.read_fasta_lists( options.query )
+
+    tax_data = oligo.get_taxdata_from_file( options.tax )
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
@@ -35,15 +40,6 @@ def add_program_options( option_parser ):
     option_parser.add_option( '-s', '--start', default = 'family',
                               help = "Level of the taxonomic hierarchy at which to begin clustering. [family]"
                             )
-
-class Rank( Enum ):
-    KINGDOM = 1
-    PHYLUM = 2
-    CLASS = 3
-    ORDER = 4
-    FAMILY = 5
-    GENUS = 6
-    SPECIES = 7
 
 if __name__ == '__main__':
     main()
