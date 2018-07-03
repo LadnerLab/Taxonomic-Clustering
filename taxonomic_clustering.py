@@ -22,9 +22,18 @@ def main():
         print( "Taxonomic lineage file must be provided." )
         sys.exit() 
 
-    current_rank = oligo.Rank[ options.start.upper() ]
+    # Get the ranks descending order
+    ranks = reversed( sorted(
+                             [ oligo.Rank[ item.upper() ].value for item in options.start ]
+                            )
+                    )
+
+    ranks = [ oligo.Rank( item ).name for item in ranks ]
+    
+    current_rank = oligo.Rank[ options.start[ 0 ].upper() ]
     if options.start is None:
         current_rank = oligo.Rank[ 'FAMILY' ]
+
 
 
     names, sequences = oligo.read_fasta_lists( options.query )
@@ -98,12 +107,16 @@ def add_program_options( option_parser ):
     option_parser.add_option( '-n', '--number', type = int, default = 10000,
                               help = "Threshold value for determining cutoff of number of sequences that can be included in each output. [10,000]"
                             )
-    option_parser.add_option( '-s', '--start', default = 'family',
-                              help = "Level of the taxonomic hierarchy at which to begin clustering. [family]"
+    option_parser.add_option( '-s', '--start', action = "append", 
+                              help = ( "Level of the taxonomic hierarchy at which to begin "
+                                       "clustering. If this option is given multiple times, "
+                                       "they will be processed in order of taxonomic rank, e.g., "
+                                       "superkingdom, kingdom, phylum, class, order, family, genus, species [ family ]"
+
+                                     )
                             )
     option_parser.add_option( '-o', '--output', default = 'tax_out',
                               help = "Directory to write grouped fasta files to, each file contains one rank-level grouping"
                             )
-
 if __name__ == '__main__':
     main()
