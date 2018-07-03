@@ -81,7 +81,7 @@ def write_outputs( out_directory, cluster_dict, threshold ):
                                 cluster_key + "_" + str( index + 1 ) + "_.fasta"
                               )
             start += seqs_per_file 
-            end = start + seqs_per_file
+            end += seqs_per_file
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
