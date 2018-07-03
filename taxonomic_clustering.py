@@ -51,9 +51,12 @@ def main():
             for current_name in list( sequence_dict.keys() ):
                 current_id = int( oligo.get_taxid_from_name( current_name ) )
 
+                if current_id in merged_ids:
+                    current_id = merged_ids[ current_id ]
+
                 if current_id in rank_data:
                     current_rank_data = rank_data[ current_id ]
-                    if not current_rank_data in clusters:
+                    if current_rank_data not in clusters:
                         clusters[ current_rank_data ] = list()
 
                     clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
