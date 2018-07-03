@@ -2,6 +2,7 @@
 
 import optparse
 import sys
+import os
 
 import protein_oligo_library as oligo
 
@@ -51,17 +52,33 @@ def main():
 
                     clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
                     del sequence_dict[ current_name ]
-                if len( clusters[ current_rank_data ] ) > options.number:
-                    break
+
+                    if len( clusters[ current_rank_data ] ) > options.number:
+                        break
+
+    write_outputs( options.output, clusters, options.number )
                    
                 
         
+
+def write_outputs( out_directory, cluster_dict, threshold ):
+    if not os.path.exists( out_directory ):
+        os.mkdir( out_directory )
+    os.chdir( out_directory )
+    count = 0
+    extra = 0
+
+
+    for cluster_key, cluster_value in cluster_dict.items():
+        names_list = [ item [ 0 ] for item in cluster_value ] 
+        sequences_list = [ item[ 1 ] for item in cluster_value ]
+        oligo.write_fastas( names_list, sequences_list, cluster_key + ".fasta" )
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
     option_parser.add_option( '-t', '--tax', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
     option_parser.add_option( '-n', '--number', type = int, default = 10000,
-                              help = "Threshold value for determining cutoff of number of sequences that can be included in output. [10,000]"
+                              help = "Threshold value for determining cutoff of number of sequences that can be included in each output. [10,000]"
                             )
     option_parser.add_option( '-s', '--start', default = 'family',
                               help = "Level of the taxonomic hierarchy at which to begin clustering. [family]"
