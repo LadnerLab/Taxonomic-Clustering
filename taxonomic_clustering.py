@@ -65,14 +65,24 @@ def write_outputs( out_directory, cluster_dict, threshold ):
     if not os.path.exists( out_directory ):
         os.mkdir( out_directory )
     os.chdir( out_directory )
-    count = 0
-    extra = 0
-
 
     for cluster_key, cluster_value in cluster_dict.items():
         names_list = [ item [ 0 ] for item in cluster_value ] 
-        sequences_list = [ item[ 1 ] for item in cluster_value ]
-        oligo.write_fastas( names_list, sequences_list, cluster_key + ".fasta" )
+        sequence_list = [ item[ 1 ] for item in cluster_value ]
+
+        overflow = len( cluster_value ) // threshold
+        num_lists = overflow if overflow > 0 else 1
+        seqs_per_file = len( sequence_list ) // num_lists
+
+        start = 0
+        end = seqs_per_file
+        for index in range( num_lists ):
+            oligo.write_fastas( names_list[ start:end ],
+                                sequence_list[ start:end ],
+                                cluster_key + "_" + str( index + 1 ) + "_.fasta"
+                              )
+            start += seqs_per_file 
+            end = start + seqs_per_file
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
