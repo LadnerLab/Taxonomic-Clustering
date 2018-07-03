@@ -41,8 +41,9 @@ def main():
                                                 index
                                               )
         if len( sequence_dict ) > 0:
-            for current_name in names:
+            for current_name in list( sequence_dict.keys() ):
                 current_id = int( oligo.get_taxid_from_name( current_name ) )
+
                 if current_id in rank_data:
                     current_rank_data = rank_data[ current_id ]
                     if not current_rank_data in clusters:
@@ -50,6 +51,10 @@ def main():
 
                     clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
                     del sequence_dict[ current_name ]
+                if len( clusters[ current_rank_data ] ) > options.number:
+                    break
+                   
+                
         
 
 def add_program_options( option_parser ):
