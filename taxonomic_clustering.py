@@ -36,8 +36,14 @@ def main():
     tax_data = oligo.get_taxdata_from_file( options.tax )
     clusters = {}
 
+    merged_ids = { 10969 : 444185, 11619 : 216991, 11630 : 216993,
+                   11806 : 353765, 45218 : 2169996, 45222 : 2169994,
+                   45709 : 2169992
+                 }
+
     for index in range( current_rank.value, -1, -1 ):
         rank_data = oligo.group_seq_from_taxid( sequence_tax_id,
+                                                merged_ids,
                                                 tax_data,
                                                 index
                                               )
