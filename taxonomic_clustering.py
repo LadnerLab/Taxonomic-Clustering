@@ -40,13 +40,17 @@ def main():
                                                 tax_data,
                                                 index
                                               )
-        for current_name in names:
-            current_id = int( oligo.get_taxid_from_name( current_name ) )
-            if current_id in rank_data:
-                current_rank_data = rank_data[ current_id ]
-                if not current_rank_data in clusters:
-                    clusters[ current_rank_data ] = list()
-                clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
+        if len( sequence_dict ) > 0:
+            for current_name in names:
+                current_id = int( oligo.get_taxid_from_name( current_name ) )
+                if current_id in rank_data:
+                    current_rank_data = rank_data[ current_id ]
+                    if not current_rank_data in clusters:
+                        clusters[ current_rank_data ] = list()
+
+                    clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
+                    del sequence_dict[ current_name ]
+        
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
