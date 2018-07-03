@@ -50,7 +50,7 @@ def main():
                    45709 : 2169992
                  }
 
-    for index in range( current_rank.value, -1, -1 ):
+    for index in range( current_rank.value, oligo.Rank[ ranks[ len( ranks) -1] ].value -1, -1 ):
         rank_data = oligo.group_seq_from_taxid( sequence_tax_id,
                                                 merged_ids,
                                                 tax_data,
@@ -69,7 +69,13 @@ def main():
                         clusters[ current_rank_data ] = list()
 
                     clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
-                    del sequence_dict[ current_name ]
+                    if len( clusters[ current_rank_data ] ) > options.number and index > oligo.Rank[ ranks[ len( ranks) -1] ].value:
+                        for item in clusters[ current_rank_data ]:
+                            sequence_dict[ item[ 0 ] ] = item[ 1 ]
+
+                        del clusters[ current_rank_data ]
+                    else:
+                            del sequence_dict[ current_name ]
 
 
     write_outputs( options.output, clusters, options.number )
