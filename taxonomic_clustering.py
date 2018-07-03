@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
+from enum import Enum
 import optparse
 import sys
 
 import protein_oligo_library as oligo
-
 
 def main():
 
@@ -23,6 +23,8 @@ def main():
         sys.exit() 
 
     names, sequences = oligo.read_fasta_lists( options.query )
+    current_rank = Rank[ options.start.upper() ]
+
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
@@ -33,6 +35,15 @@ def add_program_options( option_parser ):
     option_parser.add_option( '-s', '--start', default = 'family',
                               help = "Level of the taxonomic hierarchy at which to begin clustering. [family]"
                             )
+
+class Rank( Enum ):
+    KINGDOM = 1
+    PHYLUM = 2
+    CLASS = 3
+    ORDER = 4
+    FAMILY = 5
+    GENUS = 6
+    SPECIES = 7
 
 if __name__ == '__main__':
     main()
