@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from enum import Enum
 import optparse
 import sys
 
@@ -28,8 +27,26 @@ def main():
 
 
     names, sequences = oligo.read_fasta_lists( options.query )
+    num_seqs = len( names )
+    sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
+
+    sequence_tax_id = set( [ oligo.get_taxid_from_name( item ) for item in names ] )
 
     tax_data = oligo.get_taxdata_from_file( options.tax )
+    clusters = {}
+
+    for index in range( current_rank.value, -1, -1 ):
+        rank_data = oligo.group_seq_from_taxid( sequence_tax_id,
+                                                tax_data,
+                                                index
+                                              )
+        for current_name in names:
+            current_id = int( oligo.get_taxid_from_name( current_name ) )
+            if current_id in rank_data:
+                current_rank_data = rank_data[ current_id ]
+                if not current_rank_data in clusters:
+                    clusters[ current_rank_data ] = list()
+                clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
