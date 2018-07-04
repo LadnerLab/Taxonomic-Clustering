@@ -84,6 +84,15 @@ def main():
         
 
 def write_outputs( out_directory, cluster_dict, threshold ):
+    """
+        Writes program outputs to directory specified by the output option on the command line
+
+        :param out_directory: directy to write output files to, created if it does not exist
+        :param cluster_dict: dictionary of clusters, one cluster is written to each file
+        :param threshold: numerical threshold, if a cluster contains more sequences than this number,
+                          a new file is written in the format Rank_2_.fasta
+        
+    """
     if not os.path.exists( out_directory ):
         os.mkdir( out_directory )
     os.chdir( out_directory )
