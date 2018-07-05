@@ -18,19 +18,19 @@ def main():
     if options.query is None:
         print( "Fasta query file must be provided." )
         sys.exit() 
-    elif options.tax is None:
-        print( "Taxonomic lineage file must be provided." )
-        sys.exit() 
-
-
-
-
 
     names, sequences = oligo.read_fasta_lists( options.query )
     num_seqs = len( names )
     sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
 
-    clusters = cluster_taxonomically( options, names, sequence_dict )
+    if 'tax' in options.clustering:
+        if options.lineage:
+            clusters = cluster_taxonomically( options, names, sequence_dict )
+        else:
+            print( "Lineage file must be provided for taxonomic clustering, exiting" )
+            sys.exit()
+        
+    
 
     write_outputs( options.output, clusters, options.number )
                    
@@ -88,7 +88,7 @@ def cluster_taxonomically( options, names_list, sequence_dict ):
         current_rank = oligo.Rank[ 'FAMILY' ]
     sequence_tax_id = set( [ oligo.get_taxid_from_name( item ) for item in names ] )
 
-    tax_data = oligo.get_taxdata_from_file( options.tax )
+    tax_data = oligo.get_taxdata_from_file( options.lineage )
     clusters = {}
 
     merged_ids = { 10969 : 444185, 11619 : 216991, 11630 : 216993,
@@ -128,11 +128,12 @@ def cluster_taxonomically( options, names_list, sequence_dict ):
                             del sequence_dict[ current_name ]
                 else:
                     print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
+
     return clusters
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
-    option_parser.add_option( '-t', '--tax', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
+    option_parser.add_option( '-l', '--lineage', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
     option_parser.add_option( '-n', '--number', type = int, default = 10000,
                               help = "Threshold value for determining cutoff of number of sequences that can be included in each output. [10,000]"
                             )
@@ -147,6 +148,12 @@ def add_program_options( option_parser ):
                             )
     option_parser.add_option( '-o', '--output', default = 'tax_out',
                               help = "Directory to write grouped fasta files to, each file contains one rank-level grouping"
+                            )
+    option_parser.add_option( '-c', '--clustering', default = 'kmer',
+                              help = ( "Method to use for clustering. Can be taxonomic or kmer-based. If taxonomic is selected, "
+                                       "a taxonomic lineage file must also be provided. No lineage file is necessary for kmer "
+                                       "clustering method. [kmer]"
+                                     )
                             )
 if __name__ == '__main__':
     main()
