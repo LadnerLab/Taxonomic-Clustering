@@ -22,6 +22,59 @@ def main():
         print( "Taxonomic lineage file must be provided." )
         sys.exit() 
 
+
+
+
+
+    names, sequences = oligo.read_fasta_lists( options.query )
+    num_seqs = len( names )
+    sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
+
+    clusters = cluster_taxonomically( options, names, sequence_dict )
+
+    write_outputs( options.output, clusters, options.number )
+                   
+                
+        
+
+def write_outputs( out_directory, cluster_dict, threshold ):
+    """
+        Writes program outputs to directory specified by the output option on the command line
+
+        :param out_directory: directy to write output files to, created if it does not exist
+        :param cluster_dict: dictionary of clusters, one cluster is written to each file
+        :param threshold: numerical threshold, if a cluster contains more sequences than this number,
+                          a new file is written in the format Rank_2_.fasta
+        
+    """
+    if not os.path.exists( out_directory ):
+        os.mkdir( out_directory )
+    os.chdir( out_directory )
+
+    for cluster_key, cluster_value in cluster_dict.items():
+        names_list = [ item [ 0 ] for item in cluster_value ] 
+        sequence_list = [ item[ 1 ] for item in cluster_value ]
+
+        overflow = len( cluster_value ) // threshold
+        num_lists = overflow if overflow > 0 else 1
+        overflow = len( cluster_value ) % threshold 
+        seqs_per_file = len( sequence_list ) // num_lists
+
+        start = 0
+        end = seqs_per_file + overflow
+        for index in range( num_lists ):
+            oligo.write_fastas( names_list[ start:end ],
+                                sequence_list[ start:end ],
+                                cluster_key + "_" + str( index + 1 ) + "_.fasta"
+                              )
+            start += seqs_per_file + overflow
+            end += seqs_per_file 
+            overflow = 0
+
+
+def cluster_taxonomically( options, names_list, sequence_dict ):
+
+    names = names_list
     # Get the ranks descending order
     ranks = reversed( sorted(
                              [ oligo.Rank[ item.upper() ].value for item in options.start ]
@@ -33,13 +86,6 @@ def main():
     current_rank = oligo.Rank[ options.start[ 0 ].upper() ]
     if options.start is None:
         current_rank = oligo.Rank[ 'FAMILY' ]
-
-
-
-    names, sequences = oligo.read_fasta_lists( options.query )
-    num_seqs = len( names )
-    sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
-
     sequence_tax_id = set( [ oligo.get_taxid_from_name( item ) for item in names ] )
 
     tax_data = oligo.get_taxdata_from_file( options.tax )
@@ -82,45 +128,7 @@ def main():
                             del sequence_dict[ current_name ]
                 else:
                     print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
-
-    write_outputs( options.output, clusters, options.number )
-                   
-                
-        
-
-def write_outputs( out_directory, cluster_dict, threshold ):
-    """
-        Writes program outputs to directory specified by the output option on the command line
-
-        :param out_directory: directy to write output files to, created if it does not exist
-        :param cluster_dict: dictionary of clusters, one cluster is written to each file
-        :param threshold: numerical threshold, if a cluster contains more sequences than this number,
-                          a new file is written in the format Rank_2_.fasta
-        
-    """
-    if not os.path.exists( out_directory ):
-        os.mkdir( out_directory )
-    os.chdir( out_directory )
-
-    for cluster_key, cluster_value in cluster_dict.items():
-        names_list = [ item [ 0 ] for item in cluster_value ] 
-        sequence_list = [ item[ 1 ] for item in cluster_value ]
-
-        overflow = len( cluster_value ) // threshold
-        num_lists = overflow if overflow > 0 else 1
-        overflow = len( cluster_value ) % threshold 
-        seqs_per_file = len( sequence_list ) // num_lists
-
-        start = 0
-        end = seqs_per_file + overflow
-        for index in range( num_lists ):
-            oligo.write_fastas( names_list[ start:end ],
-                                sequence_list[ start:end ],
-                                cluster_key + "_" + str( index + 1 ) + "_.fasta"
-                              )
-            start += seqs_per_file + overflow
-            end += seqs_per_file 
-            overflow = 0
+    return clusters
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
