@@ -29,6 +29,8 @@ def main():
         else:
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
+    else:
+        clusters = cluster_by_kmers( options, sequence_dict )
         
     
 
@@ -131,6 +133,7 @@ def cluster_taxonomically( options, names_list, sequence_dict ):
 
     return clusters
 
+
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
     option_parser.add_option( '-l', '--lineage', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
@@ -155,5 +158,12 @@ def add_program_options( option_parser ):
                                        "clustering method. [kmer]"
                                      )
                             )
+    option_parser.add_option( '--id', default = 0.8, type = float,
+                              help = ( "Percentage of its kmers a sequence must share with a "
+                                       "cluster in order for it to become a member of that cluster"
+                                       " [0.8]"
+                                     )
+                            )
+
 if __name__ == '__main__':
     main()
