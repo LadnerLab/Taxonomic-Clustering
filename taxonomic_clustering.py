@@ -80,6 +80,8 @@ def main():
                         del clusters[ current_rank_data ]
                     else:
                             del sequence_dict[ current_name ]
+                else:
+                    print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
 
     write_outputs( options.output, clusters, options.number )
                    
