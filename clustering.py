@@ -160,6 +160,7 @@ def cluster_by_kmers( options, sequence_dict ):
                 out_clusters[ current_cluster ].append( names_list[ index ] )
                 break
                 
+            print( "Adding a cluster, percent_similar was: %d" % percent_similar )
             kmer_clusters[ index ] = current_seq_ymers
     print( "Num clusters: %d " % len( kmer_clusters.keys()  ) )
 
