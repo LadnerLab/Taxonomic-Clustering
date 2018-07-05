@@ -133,6 +133,35 @@ def cluster_taxonomically( options, names_list, sequence_dict ):
 
     return clusters
 
+def cluster_by_kmers( options, sequence_dict ):
+    names_list = list( sequence_dict.keys() )
+    sequence_list = list( sequence_dict.values() )
+    kmer_clusters = {}
+    out_clusters = {}
+
+
+    names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
+
+    kmer_clusters[ 0 ] = oligo.subset_lists_iter( sorted_seqs[ 0 ], 10, 1 )
+    out_clusters[ 0 ] = list( names_list[ 0 ] )
+
+    for index in range( 1, len( sorted_seqs ) ):
+        current_seq_ymers = oligo.subset_lists_iter( sorted_seqs[ index ], 10, 1 )
+
+        for current_cluster in list( kmer_clusters.keys() ):
+            intersection = current_seq_ymers & kmer_clusters[ current_cluster ]
+            percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
+
+            if percent_similar >= options.id:
+                kmer_clusters[ current_cluster ] = \
+                               ( current_seq_ymers | kmer_clusters[ current_cluster ] )
+                if current_cluster not in out_clusters:
+                    out_clusters[ current_cluster ] = list()
+                out_clusters[ current_cluster ].append( names_list[ index ] )
+                break
+                
+            kmer_clusters[ index ] = current_seq_ymers
+    print( "Num clusters: %d " % len( kmer_clusters.keys()  ) )
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
