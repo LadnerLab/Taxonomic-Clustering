@@ -147,6 +147,7 @@ def cluster_by_kmers( options, sequence_dict ):
 
     for index in range( 1, len( sorted_seqs ) ):
         current_seq_ymers = oligo.subset_lists_iter( sorted_seqs[ index ], 10, 1 )
+        inserted = False
 
         for current_cluster in list( kmer_clusters.keys() ):
             intersection = current_seq_ymers & kmer_clusters[ current_cluster ]
@@ -158,9 +159,10 @@ def cluster_by_kmers( options, sequence_dict ):
                 if current_cluster not in out_clusters:
                     out_clusters[ current_cluster ] = list()
                 out_clusters[ current_cluster ].append( names_list[ index ] )
+                inserted = True
                 break
                 
-            print( "Adding a cluster, percent_similar was: %d" % percent_similar )
+        if not inserted:
             kmer_clusters[ index ] = current_seq_ymers
     print( "Num clusters: %d " % len( kmer_clusters.keys()  ) )
 
