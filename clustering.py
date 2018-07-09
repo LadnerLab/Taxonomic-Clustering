@@ -31,6 +31,7 @@ def main():
             sys.exit()
     else:
         clusters = cluster_by_kmers( options, sequence_dict )
+         
         
     
 
@@ -143,7 +144,7 @@ def cluster_by_kmers( options, sequence_dict ):
     names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
 
     kmer_clusters[ 0 ] = oligo.subset_lists_iter( sorted_seqs[ 0 ], 10, 1 )
-    out_clusters[ 0 ] = list( names_list[ 0 ] )
+    out_clusters[ 0 ] = names_list[ 0 ]
 
     for index in range( 1, len( sorted_seqs ) ):
         current_seq_ymers = oligo.subset_lists_iter( sorted_seqs[ index ], 10, 1 )
@@ -164,7 +165,7 @@ def cluster_by_kmers( options, sequence_dict ):
                 
         if not inserted:
             kmer_clusters[ index ] = current_seq_ymers
-    print( "Num clusters: %d " % len( kmer_clusters.keys()  ) )
+    return out_clusters
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
