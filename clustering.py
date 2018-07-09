@@ -159,20 +159,25 @@ def cluster_by_kmers( options, sequence_dict ):
         current_seq_ymers = oligo.subset_lists_iter( sorted_seqs[ index ], 10, 1 )
         inserted = False
 
+        best_match_percent = 0
+
         for current_cluster in list( kmer_clusters.keys() ):
             intersection = current_seq_ymers & kmer_clusters[ current_cluster ]
             percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
-            if percent_similar >= options.id:
-                kmer_clusters[ current_cluster ] = \
-                               ( current_seq_ymers | kmer_clusters[ current_cluster ] )
-                if current_cluster not in out_clusters:
-                    out_clusters[ current_cluster ] = list()
-                out_clusters[ current_cluster ].append( names_list[ index ] )
-                inserted = True
-                break
+            if percent_similar >= options.id and percent_similar > best_match_percent:
+                best_match_percent = percent_similar
+                best_match_cluster = current_cluster
+
+        if best_match_percent > 0:
+            kmer_clusters[ best_match_cluster ] = \
+                           ( current_seq_ymers | kmer_clusters[ best_match_cluster ] )
+            if best_match_cluster not in out_clusters:
+                out_clusters[ best_match_cluster ] = list()
+            out_clusters[ best_match_cluster ].append( names_list[ index ] )
+            inserted = True
                 
-        if not inserted:
+        else:
             kmer_clusters[ index ] = current_seq_ymers
             out_clusters[ index ] = [ names_list[ index ] ] 
     return out_clusters
