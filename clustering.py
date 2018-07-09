@@ -36,6 +36,14 @@ def main():
         for key, value in clusters_with_names.items():
             clusters[ key ] = [ ( current_name, sequence_dict[ current_name ] ) for current_name in value ]
 
+
+    min_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters )
+    print( "Number of clusters: %d." % len( clusters.keys() ) )
+    print( "Minimum cluster size: %d." % min_cluster_size )
+    print( "Average cluster size: %.2f." % avg_cluster_size )
+    print( "Maximum cluster size: %d." % max_cluster_size )
+
+
     write_outputs( options.output, clusters, options.number )
                    
                 
@@ -169,6 +177,28 @@ def cluster_by_kmers( options, sequence_dict ):
             out_clusters[ index ] = [ names_list[ index ] ] 
     return out_clusters
 
+def get_cluster_stats( cluster_dict ):
+    min_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
+    avg_cluster_size = 0
+    max_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
+
+    total_size = 0
+    num_clusters = len( cluster_dict.keys() )
+
+    for key, current_cluster in cluster_dict.items():
+        cluster_len = len( current_cluster ) 
+        total_size += cluster_len
+
+        if cluster_len < min_cluster_size:
+            min_cluster_size = cluster_len
+        if cluster_len > max_cluster_size:
+            max_cluster_size = cluster_len
+            
+    avg_cluster_size = total_size / num_clusters
+
+    return min_cluster_size, avg_cluster_size, max_cluster_size
+        
+    
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
     option_parser.add_option( '-l', '--lineage', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
