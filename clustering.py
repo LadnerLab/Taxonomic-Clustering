@@ -25,7 +25,7 @@ def main():
 
     if 'tax' in options.clustering:
         if options.lineage:
-            clusters = cluster_taxonomically( options, names, sequence_dict )
+            clusters = cluster_taxonomically( options, sequence_dict )
         else:
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
@@ -43,10 +43,7 @@ def main():
     print( "Average cluster size: %.2f." % avg_cluster_size )
     print( "Maximum cluster size: %d." % max_cluster_size )
 
-
     write_outputs( options.output, clusters, options.number )
-                   
-                
         
 
 def write_outputs( out_directory, cluster_dict, threshold ):
@@ -84,9 +81,18 @@ def write_outputs( out_directory, cluster_dict, threshold ):
             overflow = 0
 
 
-def cluster_taxonomically( options, names_list, sequence_dict ):
+def cluster_taxonomically( options, sequence_dict ):
+    """
+        Clusters sequences based on taxonomic rank. Ranks that have more than 
+        the options.number amount of sequences will be split up evenly. 
 
-    names = names_list
+        :param options: options object to get the program preferences from.
+        :param sequence_dict: dictionary o fsequences with name: sequence key-value pairs
+    
+        :returns clusters: dictionary of cluster: sequence pairings
+    """
+
+    names = sequence_dict.keys()
     # Get the ranks descending order
     ranks = reversed( sorted(
                              [ oligo.Rank[ item.upper() ].value for item in options.start ]
@@ -144,6 +150,14 @@ def cluster_taxonomically( options, names_list, sequence_dict ):
     return clusters
 
 def cluster_by_kmers( options, sequence_dict ):
+    """
+        Clusters sequences based on their number of shared kmers
+    
+        :param options: options object containing the necessary data
+        :param sequence_dict: dictionary of sequences containing name: sequence mappings 
+
+        :returns: dictionary of clusters created from sequences in sequence_dict
+    """
     names_list = list( sequence_dict.keys() )
     sequence_list = list( sequence_dict.values() )
     kmer_clusters = {}
@@ -178,6 +192,13 @@ def cluster_by_kmers( options, sequence_dict ):
     return out_clusters
 
 def get_cluster_stats( cluster_dict ):
+    """
+        Gets minimum, average and maximum cluster sizes from a dictionary of clusters
+    
+        :param cluster_dict: dictionary of clusters, where the key is the cluster label
+    
+        :returns: integer minimum and maximum cluster sizes, float average cluster size
+    """
     min_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
     avg_cluster_size = 0
     max_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
