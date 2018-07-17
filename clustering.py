@@ -31,18 +31,28 @@ def main():
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
     else:
-        clusters_with_names = cluster_by_kmers( options, sequence_dict )
+        clusters_with_names, total_ymers = cluster_by_kmers( options, sequence_dict )
         clusters = {}
+        clusters_ymers = {}
+
+        for current_seq in range( len( sequence ) ):
+            clusters_ymers[ names[ current_seq ] ] = oligo.subset_lists_iter( sequence[ current_seq ], 10, 1 ) 
 
         for key, value in clusters_with_names.items():
             clusters[ key ] = [ ( current_name, sequence_dict[ current_name ] ) for current_name in value ]
+            for current_name in value:
+                if key not in clusters_ymers:
+                    clusters_ymers[ key ] = set()
+                clusters_ymers[ key ] = clusters_ymers[ key ] | ymer_dict[ current_name ]
+                 
 
 
-    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters )
-    print( "Number of sequences: %d." % len( names ) )
+    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_ymers, total_ymers )
+    print( "Number of unique ymers: %d." % len( total_ymers ) )
     print( "Number of clusters: %d." % len( clusters.keys() ) )
     print( "Minimum cluster size: %d." % min_cluster_size )
     print( "Median cluster size: %.2f." % median_cluster_size )
+    print( "Average cluster size: %.2f." % avg_cluster_size )
     print( "Maximum cluster size: %d." % max_cluster_size )
 
     write_outputs( options.output, clusters, options.number )
@@ -164,6 +174,7 @@ def cluster_by_kmers( options, sequence_dict ):
     sequence_list = list( sequence_dict.values() )
     kmer_clusters = {}
     out_clusters = {}
+    total_kmers = set()
 
 
     names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
@@ -174,6 +185,7 @@ def cluster_by_kmers( options, sequence_dict ):
     for index in range( 1, len( sorted_seqs ) ):
         current_seq_ymers = oligo.subset_lists_iter( sorted_seqs[ index ], 10, 1 )
         inserted = False
+        total_kmers = total_kmers | current_seq_ymers
 
         for current_cluster in list( kmer_clusters.keys() ):
             intersection = current_seq_ymers & kmer_clusters[ current_cluster ]
@@ -191,10 +203,10 @@ def cluster_by_kmers( options, sequence_dict ):
         if not inserted:
             kmer_clusters[ index ] = current_seq_ymers
             out_clusters[ index ] = [ names_list[ index ] ] 
-    return out_clusters
+    return out_clusters, total_kmers
 
 
-def get_cluster_stats( cluster_dict ):
+def get_cluster_stats( cluster_dict, kmer_dict ):
     """
         Gets minimum, average and maximum cluster sizes from a dictionary of clusters
     
