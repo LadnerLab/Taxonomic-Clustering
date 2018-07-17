@@ -35,7 +35,7 @@ def main():
         clusters = {}
         clusters_ymers = {}
 
-        for current_seq in range( len( sequence ) ):
+        for current_seq in range( len( sequences ) ):
             clusters_ymers[ names[ current_seq ] ] = oligo.subset_lists_iter( sequence[ current_seq ], 10, 1 ) 
 
         for key, value in clusters_with_names.items():
@@ -185,7 +185,7 @@ def cluster_by_kmers( options, sequence_dict ):
     for index in range( 1, len( sorted_seqs ) ):
         current_seq_ymers = oligo.subset_lists_iter( sorted_seqs[ index ], 10, 1 )
         inserted = False
-        total_kmers = total_kmers | current_seq_ymers
+        total_kmers |= current_seq_ymers
 
         for current_cluster in list( kmer_clusters.keys() ):
             intersection = current_seq_ymers & kmer_clusters[ current_cluster ]
@@ -203,6 +203,7 @@ def cluster_by_kmers( options, sequence_dict ):
         if not inserted:
             kmer_clusters[ index ] = current_seq_ymers
             out_clusters[ index ] = [ names_list[ index ] ] 
+
     return out_clusters, total_kmers
 
 
