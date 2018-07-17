@@ -3,6 +3,7 @@
 import optparse
 import sys
 import os
+import statistics
 
 import protein_oligo_library as oligo
 
@@ -37,10 +38,11 @@ def main():
             clusters[ key ] = [ ( current_name, sequence_dict[ current_name ] ) for current_name in value ]
 
 
-    min_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters )
+    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters )
+    print( "Number of sequences: %d." % len( names ) )
     print( "Number of clusters: %d." % len( clusters.keys() ) )
     print( "Minimum cluster size: %d." % min_cluster_size )
-    print( "Average cluster size: %.2f." % avg_cluster_size )
+    print( "Median cluster size: %.2f." % median_cluster_size )
     print( "Maximum cluster size: %d." % max_cluster_size )
 
     write_outputs( options.output, clusters, options.number )
@@ -191,15 +193,17 @@ def cluster_by_kmers( options, sequence_dict ):
             out_clusters[ index ] = [ names_list[ index ] ] 
     return out_clusters
 
+
 def get_cluster_stats( cluster_dict ):
     """
         Gets minimum, average and maximum cluster sizes from a dictionary of clusters
     
         :param cluster_dict: dictionary of clusters, where the key is the cluster label
     
-        :returns: integer minimum and maximum cluster sizes, float average cluster size
+        :returns: integer minimum, and maximum cluster sizes, float median and average cluster size
     """
     min_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
+    median_cluster_size = 0
     avg_cluster_size = 0
     max_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
 
@@ -216,8 +220,9 @@ def get_cluster_stats( cluster_dict ):
             max_cluster_size = cluster_len
             
     avg_cluster_size = total_size / num_clusters
+    median_cluster_size = statistics.median( sorted( [ len( item ) for item in cluster_dict.values() ] ) )
 
-    return min_cluster_size, avg_cluster_size, max_cluster_size
+    return min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size
         
     
 def add_program_options( option_parser ):
