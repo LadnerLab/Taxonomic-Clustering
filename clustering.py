@@ -171,8 +171,10 @@ def cluster_by_kmers( options, sequence_dict, kmer_dict ):
     
         :param options: options object containing the necessary data
         :param sequence_dict: dictionary of sequences containing name: sequence mappings 
+        :param kmer_dict: dictionary of sequence name: kmer pairings
 
         :returns: dictionary of clusters created from sequences in sequence_dict
+        :returns: set of all of the kmers from every sequence
     """
     names_list = list( sequence_dict.keys() )
     sequence_list = list( sequence_dict.values() )
@@ -217,6 +219,7 @@ def get_cluster_stats( cluster_dict, kmer_dict ):
         Gets minimum, average and maximum cluster sizes from a dictionary of clusters
     
         :param cluster_dict: dictionary of clusters, where the key is the cluster label
+        :param kmer_dict: dictionary of name: kmer pairings for sequences
     
         :returns: integer minimum, and maximum cluster sizes, float median and average cluster size
     """
