@@ -191,13 +191,14 @@ def cluster_by_kmers( options, sequence_dict, kmer_dict ):
         inserted = False
         total_kmers |= current_seq_ymers
 
-        for current_cluster in list( kmer_clusters.keys() ):
+        dict_items =  reversed( sorted( kmer_clusters.items(), key = lambda kv: kv[1]  ) )
+        for current_cluster, value in dict_items:
             intersection = current_seq_ymers & kmer_clusters[ current_cluster ]
             percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
             if percent_similar >= options.id:
-                kmer_clusters[ current_cluster ] = \
-                               ( current_seq_ymers | kmer_clusters[ current_cluster ] )
+                kmer_clusters[ current_cluster ] |= current_seq_ymers
+
                 if current_cluster not in out_clusters:
                     out_clusters[ current_cluster ] = list()
                 out_clusters[ current_cluster ].append( names_list[ index ] )
