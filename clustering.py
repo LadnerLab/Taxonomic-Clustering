@@ -34,9 +34,12 @@ def main():
         clusters_with_names, total_ymers = cluster_by_kmers( options, sequence_dict )
         clusters = {}
         clusters_ymers = {}
+        ymer_dict = {}
 
         for current_seq in range( len( sequences ) ):
-            clusters_ymers[ names[ current_seq ] ] = oligo.subset_lists_iter( sequence[ current_seq ], 10, 1 ) 
+            current_ymers = oligo.subset_lists_iter( sequences[ current_seq ], 10, 1 )
+            clusters_ymers[ names[ current_seq ] ] = current_ymers
+            ymer_dict[ names[ current_seq ] ] = current_ymers
 
         for key, value in clusters_with_names.items():
             clusters[ key ] = [ ( current_name, sequence_dict[ current_name ] ) for current_name in value ]
