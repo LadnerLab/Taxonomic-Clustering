@@ -31,7 +31,6 @@ def main():
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
     else:
-        clusters_with_names, total_ymers = cluster_by_kmers( options, sequence_dict )
         clusters = {}
         clusters_ymers = {}
         ymer_dict = {}
@@ -40,6 +39,8 @@ def main():
             current_ymers = oligo.subset_lists_iter( sequences[ current_seq ], 10, 1 )
             clusters_ymers[ names[ current_seq ] ] = current_ymers
             ymer_dict[ names[ current_seq ] ] = current_ymers
+
+        clusters_with_names, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
 
         for key, value in clusters_with_names.items():
             clusters[ key ] = [ ( current_name, sequence_dict[ current_name ] ) for current_name in value ]
@@ -164,7 +165,7 @@ def cluster_taxonomically( options, sequence_dict ):
 
     return clusters
 
-def cluster_by_kmers( options, sequence_dict ):
+def cluster_by_kmers( options, sequence_dict, kmer_dict ):
     """
         Clusters sequences based on their number of shared kmers
     
@@ -182,11 +183,11 @@ def cluster_by_kmers( options, sequence_dict ):
 
     names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
 
-    kmer_clusters[ 0 ] = oligo.subset_lists_iter( sorted_seqs[ 0 ], 10, 1 )
+    kmer_clusters[ 0 ] = kmer_dict[ names_list[ 0 ] ]
     out_clusters[ 0 ] = [ names_list[ 0 ] ]
 
     for index in range( 1, len( sorted_seqs ) ):
-        current_seq_ymers = oligo.subset_lists_iter( sorted_seqs[ index ], 10, 1 )
+        current_seq_ymers = kmer_dict[ names_list[ index ] ]
         inserted = False
         total_kmers |= current_seq_ymers
 
