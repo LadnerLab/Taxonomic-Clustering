@@ -48,7 +48,12 @@ def main():
     print( "Average cluster size: %.2f." % avg_cluster_size )
     print( "Maximum cluster size: %d." % max_cluster_size )
 
-    write_outputs( options.output, clusters_with_names, options.number )
+    output_clusters = {}
+    for cluster, names_list in clusters_with_names.items():
+        output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
+        
+
+    write_outputs( options.output, output_clusters, options.number )
         
 
 def write_outputs( out_directory, cluster_dict, threshold ):
