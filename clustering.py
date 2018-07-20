@@ -38,6 +38,8 @@ def main():
 
         clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
 
+    # TODO allow stats output for both types of clustering
+    write_outputs( options.output, clusters, options.number )
     min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
     print( "Id threshold: %.2f." % options.id )
     print( "Number of unique ymers: %d." % len( total_ymers ) )
@@ -52,8 +54,8 @@ def main():
         output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         
 
-    write_outputs( options.output, output_clusters, options.number )
         
+    output_clusters = clusters
 
 def write_outputs( out_directory, cluster_dict, threshold ):
     """
