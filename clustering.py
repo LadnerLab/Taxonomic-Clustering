@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import optparse
 import sys
 import os
@@ -34,7 +33,7 @@ def main():
         ymer_dict = {}
 
         for current_seq in range( len( sequences ) ):
-            current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], 10, 1 ) )
+            current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
             ymer_dict[ names[ current_seq ] ] = current_ymers
 
         clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
@@ -269,6 +268,9 @@ def add_program_options( option_parser ):
                                        "cluster in order for it to become a member of that cluster"
                                        " [0.8]"
                                      )
+                            )
+    option_parser.add_option( '-k', '--kmerSize', default = 10, type = int,
+                              help = "Integer size of kmers to compare when doing clustering"
                             )
 
 if __name__ == '__main__':
