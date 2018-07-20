@@ -31,35 +31,24 @@ def main():
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
     else:
-        clusters = {}
-        clusters_ymers = {}
         ymer_dict = {}
 
         for current_seq in range( len( sequences ) ):
             current_ymers = oligo.subset_lists_iter( sequences[ current_seq ], 10, 1 )
-            clusters_ymers[ names[ current_seq ] ] = current_ymers
             ymer_dict[ names[ current_seq ] ] = current_ymers
 
-        clusters_with_names, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
+        clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
 
-        for key, value in clusters_with_names.items():
-            clusters[ key ] = [ ( current_name, sequence_dict[ current_name ] ) for current_name in value ]
-            for current_name in value:
-                if key not in clusters_ymers:
-                    clusters_ymers[ key ] = set()
-                clusters_ymers[ key ] = clusters_ymers[ key ] | ymer_dict[ current_name ]
-                 
-
-
-    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_ymers, total_ymers )
+    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
+    print( "Id threshold: %.2f." % options.id )
     print( "Number of unique ymers: %d." % len( total_ymers ) )
-    print( "Number of clusters: %d." % len( clusters.keys() ) )
+    print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
     print( "Minimum cluster size: %d." % min_cluster_size )
     print( "Median cluster size: %.2f." % median_cluster_size )
     print( "Average cluster size: %.2f." % avg_cluster_size )
     print( "Maximum cluster size: %d." % max_cluster_size )
 
-    write_outputs( options.output, clusters, options.number )
+    write_outputs( options.output, clusters_with_names, options.number )
         
 
 def write_outputs( out_directory, cluster_dict, threshold ):
@@ -193,17 +182,17 @@ def cluster_by_kmers( options, sequence_dict, kmer_dict ):
         inserted = False
         total_kmers |= current_seq_ymers
 
-        dict_items =  reversed( sorted( kmer_clusters.items(), key = lambda kv: kv[1]  ) )
-        for current_cluster, value in dict_items:
-            intersection = current_seq_ymers & kmer_clusters[ current_cluster ]
+        dict_items = kmer_clusters.items()
+        for key, current_cluster in dict_items:
+            intersection = current_seq_ymers & current_cluster
             percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
             if percent_similar >= options.id:
-                kmer_clusters[ current_cluster ] |= current_seq_ymers
+                kmer_clusters[ key ] |= current_seq_ymers
 
-                if current_cluster not in out_clusters:
-                    out_clusters[ current_cluster ] = list()
-                out_clusters[ current_cluster ].append( names_list[ index ] )
+                if key not in out_clusters:
+                    out_clusters[ key ] = list()
+                out_clusters[ key ].append( names_list[ index ] )
                 inserted = True
                 break
                 
@@ -211,7 +200,7 @@ def cluster_by_kmers( options, sequence_dict, kmer_dict ):
             kmer_clusters[ index ] = current_seq_ymers
             out_clusters[ index ] = [ names_list[ index ] ] 
 
-    return out_clusters, total_kmers
+    return out_clusters, kmer_clusters, total_kmers
 
 
 def get_cluster_stats( cluster_dict, kmer_dict ):
