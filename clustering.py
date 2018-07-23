@@ -26,6 +26,18 @@ def main():
     if 'tax' in options.clustering:
         if options.lineage:
             clusters = cluster_taxonomically( options, sequence_dict )
+            min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters, None )
+
+            total_ymers = sequences 
+
+            print( "Id threshold: %.2f." % options.id )
+            print( "Number of unique sequences: %d." % len( sequences ) )
+            print( "Number of clusters: %d." % len( clusters.keys() ) )
+            print( "Minimum cluster size: %d." % min_cluster_size )
+            print( "Median cluster size: %.2f." % median_cluster_size )
+            print( "Average cluster size: %.2f." % avg_cluster_size )
+            print( "Maximum cluster size: %d." % max_cluster_size )
+
         else:
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
@@ -37,25 +49,22 @@ def main():
             ymer_dict[ names[ current_seq ] ] = current_ymers
 
         clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
+        min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
 
-    # TODO allow stats output for both types of clustering
+        print( "Id threshold: %.2f." % options.id )
+        print( "Number of unique ymers: %d." % len( total_ymers ) )
+        print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
+        print( "Minimum cluster size: %d." % min_cluster_size )
+        print( "Median cluster size: %.2f." % median_cluster_size )
+        print( "Average cluster size: %.2f." % avg_cluster_size )
+        print( "Maximum cluster size: %d." % max_cluster_size )
+
+        output_clusters = {}
+        for cluster, names_list in clusters_with_names.items():
+            output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
+        clusters = output_clusters
+
     write_outputs( options.output, clusters, options.number )
-    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
-    print( "Id threshold: %.2f." % options.id )
-    print( "Number of unique ymers: %d." % len( total_ymers ) )
-    print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
-    print( "Minimum cluster size: %d." % min_cluster_size )
-    print( "Median cluster size: %.2f." % median_cluster_size )
-    print( "Average cluster size: %.2f." % avg_cluster_size )
-    print( "Maximum cluster size: %d." % max_cluster_size )
-
-    output_clusters = {}
-    for cluster, names_list in clusters_with_names.items():
-        output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
-        
-
-        
-    output_clusters = clusters
 
 def write_outputs( out_directory, cluster_dict, threshold ):
     """
