@@ -43,50 +43,54 @@ def main():
             sys.exit()
     else:
         ymer_dict = {}
+        sorted_ids = sorted( options.id.split( ',' ) )
+
 
         for current_seq in range( len( sequences ) ):
             current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
             ymer_dict[ names[ current_seq ] ] = current_ymers
 
-        clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
-        max_cluster_size = max( [ len( item ) for item in clusters_with_names.values() ] )
+        clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( float( options.id[ 0 ] ), sequence_dict, ymer_dict )
 
-        if max_cluster_size > options.number:
-            # Get the keys of the clusters that are too large
-            too_big_clusters = [ item for item in clusters_with_names.keys() \
-                                 if len( clusters_with_names[ item ] ) > options.number \
-                               ]
-            options.id = 0.9
-            for current_cluster in too_big_clusters:
-                current_seq_dict = {}
-                current_ymer_dict = {}
+        for current_id in sorted_ids:
+            current_id = float( current_id )
+            max_cluster_size = max( [ len( item ) for item in clusters_with_names.values() ] )
 
-                max_key = max( clusters_with_names.keys() ) + 1
+            if max_cluster_size > options.number:
+                # Get the keys of the clusters that are too large
+                too_big_clusters = [ item for item in clusters_with_names.keys() \
+                                     if len( clusters_with_names[ item ] ) > options.number \
+                                   ]
+                for current_cluster in too_big_clusters:
+                    current_seq_dict = {}
+                    current_ymer_dict = {}
 
-                sub_names = {}
-                sub_kmers = {}
-                for sequence_name in clusters_with_names[ current_cluster ]:
-                    current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
-                    current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
-                    sub_clusters_with_names, sub_clusters_with_kmers, total_ymers = cluster_by_kmers( options,
-                                                                                              current_seq_dict,
-                                                                                              current_ymer_dict
-                                                                                            ) 
-                    sub_names.update( sub_clusters_with_names )
-                    sub_kmers.update( sub_clusters_with_kmers )
-                for current_key in sub_clusters_with_names.keys():
-                    clusters_with_names[ max_key ] = sub_clusters_with_names[ current_key ]
-                    clusters_with_kmers[ max_key ] = sub_clusters_with_kmers[ current_key ]
+                    max_key = max( clusters_with_names.keys() ) + 1
 
-                    max_key += 1
+                    sub_names = {}
+                    sub_kmers = {}
+                    for sequence_name in clusters_with_names[ current_cluster ]:
+                        current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
+                        current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
+                        sub_clusters_with_names, sub_clusters_with_kmers, total_ymers = cluster_by_kmers( current_id,
+                                                                                                  current_seq_dict,
+                                                                                                  current_ymer_dict
+                                                                                                ) 
+                        sub_names.update( sub_clusters_with_names )
+                        sub_kmers.update( sub_clusters_with_kmers )
+                    for current_key in sub_clusters_with_names.keys():
+                        clusters_with_names[ max_key ] = sub_clusters_with_names[ current_key ]
+                        clusters_with_kmers[ max_key ] = sub_clusters_with_kmers[ current_key ]
+
+                        max_key += 1
 
 
-                del clusters_with_names[ current_cluster ]
-                del clusters_with_kmers[ current_cluster ]
+                    del clusters_with_names[ current_cluster ]
+                    del clusters_with_kmers[ current_cluster ]
 
         min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
 
-        print( "Id threshold: %.2f." % options.id )
+        print( "Id threshold: %s." % options.id )
         print( "Number of unique ymers: %d." % len( total_ymers ) )
         print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
         print( "Minimum cluster size: %d." % min_cluster_size )
@@ -204,11 +208,11 @@ def cluster_taxonomically( options, sequence_dict ):
 
     return clusters
 
-def cluster_by_kmers( options, sequence_dict, kmer_dict ):
+def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
     """
         Clusters sequences based on their number of shared kmers
     
-        :param options: options object containing the necessary data
+        :param id: floating point identity threshold determining a sequence joins a cluster
         :param sequence_dict: dictionary of sequences containing name: sequence mappings 
         :param kmer_dict: dictionary of sequence name: kmer pairings
 
@@ -237,7 +241,7 @@ def cluster_by_kmers( options, sequence_dict, kmer_dict ):
             intersection = current_seq_ymers & current_cluster
             percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
-            if percent_similar >= options.id:
+            if percent_similar >= id_threshold:
                 kmer_clusters[ key ] |= current_seq_ymers
 
                 if key not in out_clusters:
@@ -309,9 +313,12 @@ def add_program_options( option_parser ):
                                        "clustering method. [kmer]"
                                      )
                             )
-    option_parser.add_option( '--id', default = 0.8, type = float,
-                              help = ( "Percentage of its kmers a sequence must share with a "
-                                       "cluster in order for it to become a member of that cluster"
+    option_parser.add_option( '--id', default = 0.8, type = str,
+                              help = ( "Comma-separated list of identity thresholds to use for clustering. "
+                                       "A sequence must share at least this proportion of its kmers with "
+                                       "a cluster in order to join it. If a cluster is larger than the threshold "
+                                       "specified by the --number flag, the next-biggest id will be used to break up "
+                                       " the clusters larger than this number."
                                        " [0.8]"
                                      )
                             )
