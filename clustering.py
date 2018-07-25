@@ -100,6 +100,15 @@ def write_outputs( out_directory, cluster_dict, threshold ):
         overflow = len( cluster_value ) % threshold 
         seqs_per_file = len( sequence_list ) // num_lists
 
+        if num_lists > 0:
+            print( ( "\nWarning: cluster %d is bigger than %d sequences and will be split into " 
+                   "%d files, the complete cluster will be stored in "
+                   "large_clusters/%d.too_large.fasta"
+                   )
+                   % ( cluster_key, threshold, num_lists, cluster_key )
+                 )
+            write_large_cluster( names_list, sequence_list, cluster_key )
+
         start = 0
         end = seqs_per_file + overflow
         for index in range( num_lists ):
@@ -111,6 +120,15 @@ def write_outputs( out_directory, cluster_dict, threshold ):
             end += seqs_per_file 
             overflow = 0
 
+def write_large_cluster( names_list, sequence_list, file_name ):
+    dir_for_clusters = "large_clusters"
+    if not os.path.exists( dir_for_clusters ):
+        os.mkdir( dir_for_clusters )
+    os.chdir( dir_for_clusters )
+    
+    oligo.write_fastas( names_list, sequence_list, str( file_name ) + "_too_large.fasta" )
+
+    os.chdir( ".." )
 
 def cluster_taxonomically( options, sequence_dict ):
     """
