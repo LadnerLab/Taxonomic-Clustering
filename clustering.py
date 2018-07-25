@@ -223,8 +223,9 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 break
                 
         if not inserted:
-            kmer_clusters[ index ] = current_seq_ymers
-            out_clusters[ index ] = [ names_list[ index ] ] 
+            cluster_number = len( kmer_clusters.keys() ) + 1
+            kmer_clusters[ cluster_number ] = current_seq_ymers
+            out_clusters[ cluster_number ] = [ names_list[ index ] ] 
 
     return out_clusters, kmer_clusters, total_kmers
 
