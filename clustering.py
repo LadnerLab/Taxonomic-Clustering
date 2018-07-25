@@ -52,41 +52,13 @@ def main():
 
         clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( float( options.id[ 0 ] ), sequence_dict, ymer_dict )
 
-        for current_id in sorted_ids:
+        for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
             max_cluster_size = max( [ len( item ) for item in clusters_with_names.values() ] )
 
             if max_cluster_size > options.number:
                 # Get the keys of the clusters that are too large
-                too_big_clusters = [ item for item in clusters_with_names.keys() \
-                                     if len( clusters_with_names[ item ] ) > options.number \
-                                   ]
-                for current_cluster in too_big_clusters:
-                    current_seq_dict = {}
-                    current_ymer_dict = {}
-
-                    max_key = max( clusters_with_names.keys() ) + 1
-
-                    sub_names = {}
-                    sub_kmers = {}
-                    for sequence_name in clusters_with_names[ current_cluster ]:
-                        current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
-                        current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
-                        sub_clusters_with_names, sub_clusters_with_kmers, total_ymers = cluster_by_kmers( current_id,
-                                                                                                  current_seq_dict,
-                                                                                                  current_ymer_dict
-                                                                                                ) 
-                        sub_names.update( sub_clusters_with_names )
-                        sub_kmers.update( sub_clusters_with_kmers )
-                    for current_key in sub_clusters_with_names.keys():
-                        clusters_with_names[ max_key ] = sub_clusters_with_names[ current_key ]
-                        clusters_with_kmers[ max_key ] = sub_clusters_with_kmers[ current_key ]
-
-                        max_key += 1
-
-
-                    del clusters_with_names[ current_cluster ]
-                    del clusters_with_kmers[ current_cluster ]
+                re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, options.number )
 
         min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
 
@@ -289,6 +261,38 @@ def get_cluster_stats( cluster_dict, kmer_dict ):
     return min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size
         
     
+def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, max_clust_size ):
+    too_big_clusters = [ item for item in clusters_with_names.keys() \
+                                     if len( clusters_with_names[ item ] ) > max_clust_size \
+                                   ]
+    for current_cluster in too_big_clusters:
+        current_seq_dict = {}
+        current_ymer_dict = {}
+
+        max_key = max( clusters_with_names.keys() ) + 1
+
+        sub_names = {}
+        sub_kmers = {}
+        for sequence_name in clusters_with_names[ current_cluster ]:
+            current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
+            current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
+            sub_clusters_with_names, sub_clusters_with_kmers, total_ymers = cluster_by_kmers( current_id,
+                                                                                      current_seq_dict,
+                                                                                      current_ymer_dict
+                                                                                    ) 
+            sub_names.update( sub_clusters_with_names )
+            sub_kmers.update( sub_clusters_with_kmers )
+        for current_key in sub_clusters_with_names.keys():
+            clusters_with_names[ max_key ] = sub_clusters_with_names[ current_key ]
+            clusters_with_kmers[ max_key ] = sub_clusters_with_kmers[ current_key ]
+
+            max_key += 1
+
+
+        del clusters_with_names[ current_cluster ]
+        del clusters_with_kmers[ current_cluster ]
+
+
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
     option_parser.add_option( '-l', '--lineage', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
