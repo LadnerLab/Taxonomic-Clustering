@@ -61,6 +61,10 @@ def main():
                 current_seq_dict = {}
                 current_ymer_dict = {}
 
+                max_key = max( clusters_with_names.keys() ) + 1
+
+                sub_names = {}
+                sub_kmers = {}
                 for sequence_name in clusters_with_names[ current_cluster ]:
                     current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
                     current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
@@ -68,20 +72,17 @@ def main():
                                                                                               current_seq_dict,
                                                                                               current_ymer_dict
                                                                                             ) 
-                    output_clusters = {}
-                    for cluster, names_list in sub_clusters_with_names.items():
-                        output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
-                    clusters = output_clusters
+                    sub_names.update( sub_clusters_with_names )
+                    sub_kmers.update( sub_clusters_with_kmers )
+                for current_key in sub_clusters_with_names.keys():
+                    clusters_with_names[ max_key ] = sub_clusters_with_names[ current_key ]
+                    clusters_with_kmers[ max_key ] = sub_clusters_with_kmers[ current_key ]
 
-                    write_outputs( options.output, clusters, options.number )
+                    max_key += 1
+
 
                 del clusters_with_names[ current_cluster ]
                 del clusters_with_kmers[ current_cluster ]
-
-
-               
-                
-            print( too_big_clusters )
 
         min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
 
