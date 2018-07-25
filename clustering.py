@@ -224,6 +224,7 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 
         if not inserted:
             cluster_number = len( kmer_clusters.keys() ) + 1
+            
             kmer_clusters[ cluster_number ] = current_seq_ymers
             out_clusters[ cluster_number ] = [ names_list[ index ] ] 
 
@@ -265,7 +266,7 @@ def get_cluster_stats( cluster_dict, kmer_dict ):
 def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, max_clust_size ):
     too_big_clusters = [ item for item in clusters_with_names.keys() \
                                      if len( clusters_with_names[ item ] ) > max_clust_size \
-                                   ]
+                       ]
     for current_cluster in too_big_clusters:
         current_seq_dict = {}
         current_ymer_dict = {}
@@ -283,9 +284,9 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_wi
                                                                                     ) 
             sub_names.update( sub_clusters_with_names )
             sub_kmers.update( sub_clusters_with_kmers )
-        for current_key in sub_clusters_with_names.keys():
-            clusters_with_names[ max_key ] = sub_clusters_with_names[ current_key ]
-            clusters_with_kmers[ max_key ] = sub_clusters_with_kmers[ current_key ]
+        for current_key in sub_names.keys():
+            clusters_with_names[ max_key ] = sub_names[ current_key ]
+            clusters_with_kmers[ max_key ] = sub_kmers[ current_key ]
 
             max_key += 1
 
