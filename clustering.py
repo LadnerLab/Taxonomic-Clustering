@@ -49,6 +49,32 @@ def main():
             ymer_dict[ names[ current_seq ] ] = current_ymers
 
         clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options, sequence_dict, ymer_dict )
+        max_cluster_size = max( [ len( item ) for item in clusters_with_names.values() ] )
+
+        if max_cluster_size > options.number:
+            # Get the keys of the clusters that are too large
+            too_big_clusters = [ item for item in clusters_with_names.keys() \
+                                 if len( clusters_with_names[ item ] ) > options.number \
+                               ]
+            options.id = 0.9
+            for current_cluster in too_big_clusters:
+                del clusters_with_names[ current_cluster ]
+                del clusters_with_kmers[ current_cluster ]
+
+                current_seq_dict = {}
+                current_ymer_dict = {}
+
+                for sequence_name in clusters_with_names[ current_cluster ]:
+                    current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
+                    current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
+                    clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options,
+                                                                                              current_seq_dict,
+                                                                                              current_ymer_dict
+                                                                                            ) 
+                
+                
+            print( too_big_clusters )
+
         min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
 
         print( "Id threshold: %.2f." % options.id )
