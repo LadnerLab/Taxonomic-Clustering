@@ -58,20 +58,28 @@ def main():
                                ]
             options.id = 0.9
             for current_cluster in too_big_clusters:
-                del clusters_with_names[ current_cluster ]
-                del clusters_with_kmers[ current_cluster ]
-
                 current_seq_dict = {}
                 current_ymer_dict = {}
 
                 for sequence_name in clusters_with_names[ current_cluster ]:
                     current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
                     current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
-                    clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( options,
+                    sub_clusters_with_names, sub_clusters_with_kmers, total_ymers = cluster_by_kmers( options,
                                                                                               current_seq_dict,
                                                                                               current_ymer_dict
                                                                                             ) 
-                
+                    output_clusters = {}
+                    for cluster, names_list in sub_clusters_with_names.items():
+                        output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
+                    clusters = output_clusters
+
+                    write_outputs( options.output, clusters, options.number )
+
+                del clusters_with_names[ current_cluster ]
+                del clusters_with_kmers[ current_cluster ]
+
+
+               
                 
             print( too_big_clusters )
 
