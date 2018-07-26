@@ -30,7 +30,6 @@ def main():
 
             total_ymers = sequences 
 
-            print( "Id threshold: %.2f." % options.id )
             print( "Number of unique sequences: %d." % len( sequences ) )
             print( "Number of clusters: %d." % len( clusters.keys() ) )
             print( "Minimum cluster size: %d." % min_cluster_size )
