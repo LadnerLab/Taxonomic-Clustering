@@ -301,11 +301,15 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_wi
         for sequence_name in clusters_with_names[ current_cluster ]:
             current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
             current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
+
+
         sub_clusters_with_names, sub_clusters_with_kmers, total_ymers = cluster_by_kmers( current_id,
                                                                                   current_seq_dict,
                                                                                   current_ymer_dict
                                                                                 ) 
 
+        sub_names.update( sub_clusters_with_names )
+        sub_kmers.update( sub_clusters_with_kmers )
 
         for current_key in sub_names.keys():
             clusters_with_names[ max_key ] = sub_names[ current_key ]
