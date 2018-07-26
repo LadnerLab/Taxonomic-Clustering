@@ -74,9 +74,9 @@ def main():
             output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         clusters = output_clusters
 
-    write_outputs( options.output, clusters, options.number )
+    write_outputs( options.output, clusters, clusters_with_kmers, options.number )
 
-def write_outputs( out_directory, cluster_dict, threshold ):
+def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, threshold ):
     """
         Writes program outputs to directory specified by the output option on the command line
 
