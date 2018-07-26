@@ -91,6 +91,8 @@ def write_outputs( out_directory, cluster_dict, threshold ):
         os.mkdir( out_directory )
     os.chdir( out_directory )
 
+    overflow_clusters = 0
+
     for cluster_key, cluster_value in cluster_dict.items():
         names_list = [ item [ 0 ] for item in cluster_value ] 
         sequence_list = [ item[ 1 ] for item in cluster_value ]
@@ -100,7 +102,6 @@ def write_outputs( out_directory, cluster_dict, threshold ):
         overflow = len( cluster_value ) % threshold 
         seqs_per_file = len( sequence_list ) // num_lists
 
-        overflow_clusters = 0
 
         if num_lists > 1:
             overflow_clusters += 1
@@ -117,10 +118,10 @@ def write_outputs( out_directory, cluster_dict, threshold ):
             end += seqs_per_file 
             overflow = 0
 
-    if overflow_clusters:
+    if overflow_clusters > 0:
         print( ( "WARNING: %d cluster(s) had more than %d sequences, and were split up "
                  "into sizes of %d. The original large clusters were written to "
-                 " %s/large_clusters."
+                 "%s/large_clusters."
                )
                % ( overflow_clusters, threshold, threshold, out_directory )
              )
