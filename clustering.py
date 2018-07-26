@@ -50,7 +50,7 @@ def main():
             current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
             ymer_dict[ names[ current_seq ] ] = current_ymers
 
-        clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( float( options.id[ 0 ] ), sequence_dict, ymer_dict )
+        clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
 
         for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
@@ -100,13 +100,10 @@ def write_outputs( out_directory, cluster_dict, threshold ):
         overflow = len( cluster_value ) % threshold 
         seqs_per_file = len( sequence_list ) // num_lists
 
-        if num_lists > 0:
-            print( ( "\nWarning: cluster %d is bigger than %d sequences and will be split into " 
-                   "%d files, the complete cluster will be stored in "
-                   "large_clusters/%d.too_large.fasta"
-                   )
-                   % ( cluster_key, threshold, num_lists, cluster_key )
-                 )
+        overflow_clusters = 0
+
+        if num_lists > 1:
+            overflow_clusters += 1
             write_large_cluster( names_list, sequence_list, cluster_key )
 
         start = 0
@@ -119,6 +116,14 @@ def write_outputs( out_directory, cluster_dict, threshold ):
             start += seqs_per_file + overflow
             end += seqs_per_file 
             overflow = 0
+
+    if overflow_clusters:
+        print( ( "WARNING: %d cluster(s) had more than %d sequences, and were split up "
+                 "into sizes of %d. The original large clusters were written to "
+                 " %s/large_clusters."
+               )
+               % ( overflow_clusters, threshold, threshold, out_directory )
+             )
 
 def write_large_cluster( names_list, sequence_list, file_name ):
     dir_for_clusters = "large_clusters"
