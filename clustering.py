@@ -114,11 +114,11 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
 
 
     if overflow_clusters > 0:
-        print( ( "WARNING: %d cluster(s) had more than %d sequences, and were split up "
-                 "into sizes of %d. The original large clusters were written to "
+        print( ( "WARNING: %d cluster(s) had more than %d kmers, and were split up. "
+                 "The original large clusters were written to "
                  "%s/large_clusters."
                )
-               % ( overflow_clusters, threshold, threshold, out_directory )
+               % ( overflow_clusters, threshold, out_directory )
              )
 
 
