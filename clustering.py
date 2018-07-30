@@ -93,30 +93,25 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
     overflow_clusters = 0
 
     for cluster_key, cluster_value in cluster_dict.items():
-        names_list = [ item [ 0 ] for item in cluster_value ] 
+
+        names_list = [ item[ 0 ] for item in cluster_value ]
         sequence_list = [ item[ 1 ] for item in cluster_value ]
+        sub_clusters = sub_clusters_from_kmers( { cluster_key: kmer_cluster_dict[ cluster_key ] }, kmer_name_dict, names_list, sequence_list, threshold )
 
-        overflow = len( cluster_value ) // threshold
-        num_lists = overflow if overflow > 0 else 1
-        overflow = len( cluster_value ) % threshold 
-        seqs_per_file = len( sequence_list ) // num_lists
+        num_lists = 0
 
+        if len( sub_clusters ) > 0:
+            num_lists = len( sub_clusters )
+            for current_sub_cluster in sub_clusters.keys():
+                write_cluster( current_sub_cluster, sub_clusters[ current_sub_cluster ], sequence_dict )
+        else:
+            write_cluster( str( cluster_key ), cluster_dict[ cluster_key ], sequence_dict )
+                
 
-        sub_clusters_from_kmers( { 3: kmer_cluster_dict[ 3 ] }, kmer_name_dict, names_list, sequence_list, threshold )
         if num_lists > 1:
             overflow_clusters += 1
             write_large_cluster( names_list, sequence_list, cluster_key )
 
-        start = 0
-        end = seqs_per_file + overflow
-        for index in range( num_lists ):
-            oligo.write_fastas( names_list[ start:end ],
-                                sequence_list[ start:end ],
-                                str( cluster_key ) + "_" + str( index + 1 ) + "_.fasta"
-                              )
-            start += seqs_per_file + overflow
-            end += seqs_per_file 
-            overflow = 0
 
     if overflow_clusters > 0:
         print( ( "WARNING: %d cluster(s) had more than %d sequences, and were split up "
@@ -127,34 +122,53 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
              )
 
 
+def write_cluster( file_name, sequence_names, sequence_dict ):
+    names_list = list()
+    sequence_list = list()
+
+    for current_seq in sequence_names:
+        names_list.append( current_seq )
+        sequence_list.append( sequence_dict[ current_seq ] )
+    oligo.write_fastas( names_list, sequence_list, file_name + ".fasta" )
+    
+
 def sub_clusters_from_kmers( cluster_to_split, kmer_name_dict, names_list, sequence_list, int_thresh ):
 
     out_cluster_kmers = {}
     out_cluster_names = {}
 
-
-
     cluster_num = list( cluster_to_split.keys() )[ 0 ]
-    cluster_size = len( cluster_to_split[ cluster_num ] )
+    cluster_size = cluster_to_split[ cluster_num ]
     cluster_size_original = cluster_size
 
+    clustered_names = list()
+
     index = 0
-    sub_cluster = 2
+    sub_cluster = 1
 
-    while cluster_size > int_thresh:
-        cluster_size -= len( kmer_name_dict[ names_list[ index ] ] )
-
+    while len( cluster_to_split[ cluster_num ] ) > int_thresh:
+        cluster_to_split[ cluster_num ] -= kmer_name_dict[ names_list[ index ] ]
         cluster_name = str( cluster_num ) + "_" + str( sub_cluster )
 
         if cluster_name not in out_cluster_kmers:
             out_cluster_names[ cluster_name ] = list()
-            out_cluster_kmers[ cluster_name ] = 0
+            out_cluster_kmers[ cluster_name ] = set()
         out_cluster_names[ cluster_name ].append( names_list[ index ] )
-        out_cluster_kmers[ cluster_name ] += len( kmer_name_dict[ names_list[ index ] ] )
+        out_cluster_kmers[ cluster_name ] |= kmer_name_dict[ names_list[ index ] ]
 
-        if out_cluster_kmers[ cluster_name ] >= int_thresh:
+        clustered_names.append( names_list[ index ] )
+
+        index += 1
+        if len( out_cluster_kmers[ cluster_name ] ) > int_thresh:
             sub_cluster += 1
-        
+
+    if len( names_list ) - len( clustered_names ) != 0:
+        cluster_name = str( cluster_num ) + "_" + str( sub_cluster + 1 )
+
+        out_cluster_names[ cluster_name ] = list()
+        for index in range( len( names_list ) ):
+            if names_list[ index ] not in clustered_names:
+                out_cluster_names[ cluster_name ].append( names_list[ index ] )
     return out_cluster_names
     
     
