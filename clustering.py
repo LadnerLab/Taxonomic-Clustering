@@ -74,9 +74,9 @@ def main():
             output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         clusters = output_clusters
 
-    write_outputs( options.output, clusters, clusters_with_kmers, options.number )
+    write_outputs( options.output, clusters, clusters_with_kmers, sequence_dict, ymer_dict, options.number )
 
-def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, threshold ):
+def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict, kmer_name_dict, threshold ):
     """
         Writes program outputs to directory specified by the output option on the command line
 
@@ -102,6 +102,7 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, threshold ):
         seqs_per_file = len( sequence_list ) // num_lists
 
 
+        sub_clusters_from_kmers( { 3: kmer_cluster_dict[ 3 ] }, kmer_name_dict, names_list, sequence_list, threshold )
         if num_lists > 1:
             overflow_clusters += 1
             write_large_cluster( names_list, sequence_list, cluster_key )
@@ -125,6 +126,39 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, threshold ):
                % ( overflow_clusters, threshold, threshold, out_directory )
              )
 
+
+def sub_clusters_from_kmers( cluster_to_split, kmer_name_dict, names_list, sequence_list, int_thresh ):
+
+    out_cluster_kmers = {}
+    out_cluster_names = {}
+
+
+
+    cluster_num = list( cluster_to_split.keys() )[ 0 ]
+    cluster_size = len( cluster_to_split[ cluster_num ] )
+    cluster_size_original = cluster_size
+
+    index = 0
+    sub_cluster = 2
+
+    while cluster_size > int_thresh:
+        cluster_size -= len( kmer_name_dict[ names_list[ index ] ] )
+
+        cluster_name = str( cluster_num ) + "_" + str( sub_cluster )
+
+        if cluster_name not in out_cluster_kmers:
+            out_cluster_names[ cluster_name ] = list()
+            out_cluster_kmers[ cluster_name ] = 0
+        out_cluster_names[ cluster_name ].append( names_list[ index ] )
+        out_cluster_kmers[ cluster_name ] += len( kmer_name_dict[ names_list[ index ] ] )
+
+        if out_cluster_kmers[ cluster_name ] >= int_thresh:
+            sub_cluster += 1
+        
+    return out_cluster_names
+    
+    
+    
 def write_large_cluster( names_list, sequence_list, file_name ):
     dir_for_clusters = "large_clusters"
     if not os.path.exists( dir_for_clusters ):
