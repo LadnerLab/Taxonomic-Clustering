@@ -25,12 +25,30 @@ def main():
 
     if 'tax' in options.clustering:
         if options.lineage:
-            clusters = cluster_taxonomically( options, sequence_dict )
-            min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters, None )
+
+            ymer_dict = {}
+            total_ymers = set()
+            clusters_with_kmers = {}
+
+            for current_seq in range( len( sequences ) ):
+                current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
+                # total_ymers |= current_ymers
+                ymer_dict[ names[ current_seq ] ] = current_ymers
+
+            clusters = cluster_taxonomically( options, sequence_dict, ymer_dict )
+
+            for cluster_num, cluster_vals in clusters.items():
+                clusters_with_kmers[ cluster_num ] = set()
+
+                for item in cluster_vals:
+                    clusters_with_kmers[ cluster_num ] |= ymer_dict[ item[0] ]
+
+
+            min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
 
             total_ymers = sequences 
 
-            print( "Number of unique sequences: %d." % len( sequences ) )
+            print( "Number of unique kmers: %d." % len( total_ymers ) )
             print( "Number of clusters: %d." % len( clusters.keys() ) )
             print( "Minimum cluster size: %d." % min_cluster_size )
             print( "Median cluster size: %.2f." % median_cluster_size )
@@ -74,7 +92,7 @@ def main():
             output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         clusters = output_clusters
 
-    write_outputs( options.output, clusters, clusters_with_kmers, sequence_dict, ymer_dict, options.number )
+    # write_outputs( options.output, clusters, clusters_with_kmers, sequence_dict, ymer_dict, options.number )
 
 def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict, kmer_name_dict, threshold ):
     """
@@ -183,7 +201,7 @@ def write_large_cluster( names_list, sequence_list, file_name ):
 
     os.chdir( ".." )
 
-def cluster_taxonomically( options, sequence_dict ):
+def cluster_taxonomically( options, sequence_dict, kmer_dict ):
     """
         Clusters sequences based on taxonomic rank. Ranks that have more than 
         the options.number amount of sequences will be split up evenly. 
@@ -210,6 +228,7 @@ def cluster_taxonomically( options, sequence_dict ):
 
     tax_data = oligo.get_taxdata_from_file( options.lineage )
     clusters = {}
+    clusters_kmers = {}
 
     merged_ids = { 10969 : 444185, 11619 : 216991, 11630 : 216993,
                    11806 : 353765, 45218 : 2169996, 45222 : 2169994,
@@ -236,14 +255,18 @@ def cluster_taxonomically( options, sequence_dict ):
                     current_rank_data = rank_data[ current_id ]
                     if current_rank_data not in clusters:
                         clusters[ current_rank_data ] = list()
+                        clusters_kmers[ current_rank_data ] = set()
 
                     clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
-                    if len( clusters[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
+                    clusters_kmers[ current_rank_data ] |= kmer_dict[ current_name ]
+
+                    if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
                         # Put the items back in the pool of choices if our cluster becomes too large
                         for item in clusters[ current_rank_data ]:
                             sequence_dict[ item[ 0 ] ] = item[ 1 ]
 
                         del clusters[ current_rank_data ]
+                        del clusters_kmers[ current_rank_data ]
                     else:
                             del sequence_dict[ current_name ]
                 else:
