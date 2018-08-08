@@ -32,7 +32,7 @@ def main():
 
             for current_seq in range( len( sequences ) ):
                 current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
-                # total_ymers |= current_ymers
+                total_ymers |= current_ymers
                 ymer_dict[ names[ current_seq ] ] = current_ymers
 
             clusters = cluster_taxonomically( options, sequence_dict, ymer_dict )
@@ -45,8 +45,6 @@ def main():
 
 
             min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
-
-            total_ymers = sequences 
 
             print( "Number of unique kmers: %d." % len( total_ymers ) )
             print( "Number of clusters: %d." % len( clusters.keys() ) )
@@ -92,7 +90,7 @@ def main():
             output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         clusters = output_clusters
 
-    # write_outputs( options.output, clusters, clusters_with_kmers, sequence_dict, ymer_dict, options.number )
+    write_outputs( options.output, clusters, clusters_with_kmers, sequence_dict, ymer_dict, options.number )
 
 def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict, kmer_name_dict, threshold ):
     """
@@ -109,12 +107,13 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
     os.chdir( out_directory )
 
     overflow_clusters = 0
+    cluster_size_file = open( 'cluster_sizes.txt', 'w' )
 
     for cluster_key, cluster_value in cluster_dict.items():
 
         names_list = [ item[ 0 ] for item in cluster_value ]
         sequence_list = [ item[ 1 ] for item in cluster_value ]
-        sub_clusters = sub_clusters_from_kmers( { cluster_key: kmer_cluster_dict[ cluster_key ] }, kmer_name_dict, names_list, sequence_list, threshold )
+        sub_clusters, sub_cluster_kmers = sub_clusters_from_kmers( { cluster_key: kmer_cluster_dict[ cluster_key ] }, kmer_name_dict, names_list, sequence_list, threshold )
 
         num_lists = 0
 
@@ -122,8 +121,17 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
             num_lists = len( sub_clusters )
             for current_sub_cluster in sub_clusters.keys():
                 write_cluster( current_sub_cluster, sub_clusters[ current_sub_cluster ], sequence_dict )
+
+                sub_cluster_length = len( sub_cluster_kmers[ current_sub_cluster ] )
+                cluster_size_file.write( current_sub_cluster + '.fasta|' + str( sub_cluster_length ) )
+                cluster_size_file.write( '\n' )
         else:
             write_cluster( str( cluster_key ), cluster_dict[ cluster_key ], sequence_dict )
+
+            cluster_length = len( kmer_cluster_dict[ cluster_key ] )
+            cluster_size_file.write( cluster_key + '.fasta|' + str( cluster_length ) )
+            cluster_size_file.write( '\n' )
+
                 
 
         if num_lists > 1:
@@ -131,6 +139,7 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
             write_large_cluster( names_list, sequence_list, cluster_key )
 
 
+    cluster_size_file.close()
     if overflow_clusters > 0:
         print( ( "WARNING: %d cluster(s) had more than %d kmers, and were split up. "
                  "The original large clusters were written to "
@@ -184,10 +193,13 @@ def sub_clusters_from_kmers( cluster_to_split, kmer_name_dict, names_list, seque
         cluster_name = str( cluster_num ) + "_" + str( sub_cluster + 1 )
 
         out_cluster_names[ cluster_name ] = list()
+        out_cluster_kmers[ cluster_name ] = set()
         for index in range( len( names_list ) ):
             if names_list[ index ] not in clustered_names:
                 out_cluster_names[ cluster_name ].append( names_list[ index ] )
-    return out_cluster_names
+                out_cluster_kmers[ cluster_name ] |= kmer_name_dict[ names_list[ index ] ]
+
+    return out_cluster_names, out_cluster_kmers
     
     
     
