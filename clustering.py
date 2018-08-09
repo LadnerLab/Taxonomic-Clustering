@@ -267,8 +267,8 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
             for current_name in list( sequence_dict.keys() ):
                 current_id = int( oligo.get_taxid_from_name( current_name ) )
 
-                if current_id in merged_ids:
-                    current_id = merged_ids[ current_id ]
+
+                current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
                 if current_id in rank_data:
                     current_rank_data = rank_data[ current_id ]
@@ -422,6 +422,10 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_wi
         del clusters_with_names[ current_cluster ]
         del clusters_with_kmers[ current_cluster ]
 
+def check_for_id_in_merged_ids( merged_ids, current_id ):
+    if current_id in merged_ids:
+        current_id = merged_ids[ current_id ]
+    return current_id
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
