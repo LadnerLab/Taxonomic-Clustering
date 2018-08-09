@@ -30,7 +30,8 @@ def main():
     total_ymers = set()
 
     for current_seq in range( len( sequences ) ):
-        current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
+        current_ymers = oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 )
+        current_ymers = frozenset( current_ymers )
         total_ymers |= current_ymers
         ymer_dict[ names[ current_seq ] ] = current_ymers
 
@@ -51,7 +52,9 @@ def main():
             sys.exit()
     else:
         sorted_ids = sorted( options.id.split( ',' ) )
-        clusters_with_names, clusters_with_kmers = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
+        clusters_with_names, clusters_with_kmers = cluster_by_kmers( float( sorted_ids[ 0 ] ),
+                                                                     sequence_dict, ymer_dict
+                                                                   )
 
         for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
@@ -59,16 +62,21 @@ def main():
 
             if max_cluster_size > options.number:
                 # Get the keys of the clusters that are too large
-                re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, options.number )
+                re_cluster_kmers( sequence_dict, ymer_dict,
+                                  clusters_with_names, clusters_with_kmers,
+                                  current_id, options.number
+                                )
 
         print( "Id threshold: %s." % options.id )
 
         output_clusters = {}
+
         for cluster, names_list in clusters_with_names.items():
             output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         clusters = output_clusters
 
-    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
+    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = \
+                      get_cluster_stats( clusters_with_kmers, total_ymers )
 
     print( "Number of unique ymers: %d." % len( total_ymers ) )
     print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
@@ -100,7 +108,10 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
 
         names_list = [ item[ 0 ] for item in cluster_value ]
         sequence_list = [ item[ 1 ] for item in cluster_value ]
-        sub_clusters, sub_cluster_kmers = sub_clusters_from_kmers( { cluster_key: kmer_cluster_dict[ cluster_key ] }, kmer_name_dict, names_list, sequence_list, threshold )
+        sub_clusters, sub_cluster_kmers = sub_clusters_from_kmers( { cluster_key: kmer_cluster_dict[ cluster_key ] },
+                                                                   kmer_name_dict, names_list,
+                                                                   sequence_list, threshold
+                                                                  )
 
         num_lists = 0
 
@@ -265,7 +276,9 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                     if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
 
                         # Put the items back in the pool of choices if our cluster becomes too large
-                        put_large_cluster_back_in_pool( clusters, clusters_kmers, sequence_dict, current_rank_data )
+                        put_large_cluster_back_in_pool( clusters, clusters_kmers,
+                                                        sequence_dict, current_rank_data
+                                                      )
                         deleted_clusters.append( current_rank_data )
 
                     else:
@@ -358,7 +371,9 @@ def get_cluster_stats( cluster_dict, kmer_dict ):
     return min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size
         
     
-def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, max_clust_size ):
+def re_cluster_kmers( sequence_dict, ymer_dict,
+                      clusters_with_names, clusters_with_kmers,
+                      current_id, max_clust_size ):
     too_big_clusters = [ item for item in clusters_with_names.keys() \
                                      if len( clusters_with_names[ item ] ) > max_clust_size \
                        ]
