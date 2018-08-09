@@ -3,6 +3,7 @@ import optparse
 import sys
 import os
 import statistics
+import copy
 
 import protein_oligo_library as oligo
 
@@ -21,6 +22,9 @@ def main():
 
     names, sequences = oligo.read_fasta_lists( options.query )
     num_seqs = len( names )
+
+    assert len( names ) == len( sequences )
+
     sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
 
     if 'tax' in options.clustering:
@@ -232,6 +236,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                     )
 
     ranks = [ oligo.Rank( item ).name for item in ranks ]
+    sequence_dict = copy.deepcopy( sequence_dict )
     
     current_rank = oligo.Rank[ options.start[ 0 ].upper() ]
     if options.start is None:
@@ -265,6 +270,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
                 if current_id in rank_data:
                     current_rank_data = rank_data[ current_id ]
+
                     if current_rank_data not in clusters:
                         clusters[ current_rank_data ] = list()
                         clusters_kmers[ current_rank_data ] = set()
@@ -314,25 +320,28 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
         inserted = False
         total_kmers |= current_seq_ymers
 
-        dict_items = kmer_clusters.items()
-        for key, current_cluster in dict_items:
-            intersection = current_seq_ymers & current_cluster
-            percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
+        if len( current_seq_ymers ) > 0:
 
-            if percent_similar >= id_threshold:
-                kmer_clusters[ key ] |= current_seq_ymers
+            dict_items = kmer_clusters.items()
+            for key, current_cluster in dict_items:
 
-                if key not in out_clusters:
-                    out_clusters[ key ] = list()
-                out_clusters[ key ].append( names_list[ index ] )
-                inserted = True
-                break
+                intersection = current_seq_ymers & current_cluster
+                percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
+
+                if percent_similar >= id_threshold:
+                    kmer_clusters[ key ] |= current_seq_ymers
+
+                    if key not in out_clusters:
+                        out_clusters[ key ] = list()
+                    out_clusters[ key ].append( names_list[ index ] )
+                    inserted = True
+                    break
                 
-        if not inserted:
-            cluster_number = len( kmer_clusters.keys() ) + 1
-            
-            kmer_clusters[ cluster_number ] = current_seq_ymers
-            out_clusters[ cluster_number ] = [ names_list[ index ] ] 
+            if not inserted:
+                cluster_number = len( kmer_clusters.keys() ) + 1
+                
+                kmer_clusters[ cluster_number ] = current_seq_ymers
+                out_clusters[ cluster_number ] = [ names_list[ index ] ] 
 
     return out_clusters, kmer_clusters, total_kmers
 
@@ -429,7 +438,7 @@ def add_program_options( option_parser ):
                                        "clustering method. [kmer]"
                                      )
                             )
-    option_parser.add_option( '--id', default = 0.8, type = str,
+    option_parser.add_option( '--id', default = '0.8', type = str,
                               help = ( "Comma-separated list of identity thresholds to use for clustering. "
                                        "A sequence must share at least this proportion of its kmers with "
                                        "a cluster in order to join it. If a cluster is larger than the threshold "
