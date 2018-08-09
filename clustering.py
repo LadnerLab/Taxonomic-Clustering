@@ -269,25 +269,24 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 current_id = int( oligo.get_taxid_from_name( current_name ) )
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
-                if current_id in rank_data:
-                    current_rank_data = rank_data[ current_id ].lower()
+                current_rank_data = rank_data[ current_id ].lower()
 
-                    if current_rank_data in deleted_clusters:
-                        continue
+                if current_id in rank_data and current_rank_data not in deleted_clusters:
+                    if current_rank_data not in deleted_clusters:
+                        if current_rank_data not in clusters:
+                            clusters[ current_rank_data ] = list()
+                            clusters_kmers[ current_rank_data ] = set()
 
-                    if current_rank_data not in clusters:
-                        clusters[ current_rank_data ] = list()
-                        clusters_kmers[ current_rank_data ] = set()
+                        clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
+                        clusters_kmers[ current_rank_data ] |= kmer_dict[ current_name ]
 
-                    clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
-                    clusters_kmers[ current_rank_data ] |= kmer_dict[ current_name ]
+                        if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
 
-                    if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
-                        # Put the items back in the pool of choices if our cluster becomes too large
-                        put_large_cluster_back_in_pool( clusters, clusters_kmers, current_rank_data, item )
+                            # Put the items back in the pool of choices if our cluster becomes too large
+                            put_large_cluster_back_in_pool( clusters, clusters_kmers, current_rank_data, item )
+                            deleted_clusters.append( current_rank_data )
 
-                        deleted_clusters.append( current_rank_data )
-                    else:
+                        else:
                             del sequence_dict[ current_name ]
                 else:
                     print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
