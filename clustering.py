@@ -303,19 +303,19 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
 
             dict_items = kmer_clusters.items()
             for key, current_cluster in dict_items:
+                if not inserted:
+                    intersection = current_seq_ymers & current_cluster
+                    percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
-                intersection = current_seq_ymers & current_cluster
-                percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
-
-                if percent_similar >= id_threshold:
-                    add_seq_to_cluster( kmer_clusters,
-                                        current_seq_ymers,
-                                        key,
-                                        out_clusters,
-                                        names_list,
-                                        index )
-                    inserted = True
-                    break
+                    if percent_similar >= id_threshold:
+                        add_seq_to_cluster( kmer_clusters,
+                                            current_seq_ymers,
+                                            key,
+                                            out_clusters,
+                                            names_list,
+                                            index
+                                          )
+                        inserted = True
                 
             if not inserted:
                 cluster_number = len( kmer_clusters.keys() ) + 1
