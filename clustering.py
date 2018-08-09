@@ -308,11 +308,12 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
                 if percent_similar >= id_threshold:
-                    kmer_clusters[ key ] |= current_seq_ymers
-
-                    if key not in out_clusters:
-                        out_clusters[ key ] = list()
-                    out_clusters[ key ].append( names_list[ index ] )
+                    add_seq_to_cluster( kmer_clusters,
+                                        current_seq_ymers,
+                                        key,
+                                        out_clusters,
+                                        names_list,
+                                        index )
                     inserted = True
                     break
                 
@@ -404,6 +405,14 @@ def put_large_cluster_back_in_pool( clusters, clusters_kmers, sequence_dict, cur
     del clusters[ current_rank_data ]
     del clusters_kmers[ current_rank_data ]
                         
+def add_seq_to_cluster( kmer_clusters, current_seq_ymers, key, out_clusters, names_list, index ):
+
+    kmer_clusters[ key ] |= current_seq_ymers
+
+    if key not in out_clusters:
+        out_clusters[ key ] = list()
+    out_clusters[ key ].append( names_list[ index ] )
+
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
