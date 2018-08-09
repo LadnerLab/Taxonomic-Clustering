@@ -261,6 +261,8 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                                                 tax_data,
                                                 current_rank
                                               )
+        deleted_clusters = list()
+
         if len( sequence_dict ) > 0:
             for current_name in list( sequence_dict.keys() ):
                 current_id = int( oligo.get_taxid_from_name( current_name ) )
@@ -270,6 +272,11 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
                 if current_id in rank_data:
                     current_rank_data = rank_data[ current_id ]
+
+                    current_rank_data = current_rank_data.lower()
+
+                    if current_rank_data in deleted_clusters:
+                        continue
 
                     if current_rank_data not in clusters:
                         clusters[ current_rank_data ] = list()
@@ -285,6 +292,8 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
                         del clusters[ current_rank_data ]
                         del clusters_kmers[ current_rank_data ]
+
+                        deleted_clusters.append( current_rank_data )
                     else:
                             del sequence_dict[ current_name ]
                 else:
@@ -420,7 +429,7 @@ def add_program_options( option_parser ):
     option_parser.add_option( '-n', '--number', type = int, default = 10000,
                               help = "Threshold value for determining cutoff of number of sequences that can be included in each output. [10,000]"
                             )
-    option_parser.add_option( '-s', '--start', action = "append", default = [ 'family' ],
+    option_parser.add_option( '-s', '--start', action = "append", 
                               help = ( "Level of the taxonomic hierarchy at which to begin "
                                        "clustering. If this option is given multiple times, "
                                        "e.g. -s family -s phylum, "
