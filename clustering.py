@@ -265,15 +265,12 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
         if len( sequence_dict ) > 0:
             for current_name in list( sequence_dict.keys() ):
+
                 current_id = int( oligo.get_taxid_from_name( current_name ) )
-
-
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
                 if current_id in rank_data:
-                    current_rank_data = rank_data[ current_id ]
-
-                    current_rank_data = current_rank_data.lower()
+                    current_rank_data = rank_data[ current_id ].lower()
 
                     if current_rank_data in deleted_clusters:
                         continue
@@ -287,11 +284,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
                     if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
                         # Put the items back in the pool of choices if our cluster becomes too large
-                        for item in clusters[ current_rank_data ]:
-                            sequence_dict[ item[ 0 ] ] = item[ 1 ]
-
-                        del clusters[ current_rank_data ]
-                        del clusters_kmers[ current_rank_data ]
+                        put_large_cluster_back_in_pool( clusters, clusters_kmers, current_rank_data, item )
 
                         deleted_clusters.append( current_rank_data )
                     else:
@@ -426,6 +419,14 @@ def check_for_id_in_merged_ids( merged_ids, current_id ):
     if current_id in merged_ids:
         current_id = merged_ids[ current_id ]
     return current_id
+
+def put_large_cluster_back_in_pool( clusters, clusters_kmers, current_rank_data, item ):
+    for item in clusters[ current_rank_data ]:
+        sequence_dict[ item[ 0 ] ] = item[ 1 ]
+
+    del clusters[ current_rank_data ]
+    del clusters_kmers[ current_rank_data ]
+                        
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
