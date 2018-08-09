@@ -26,18 +26,18 @@ def main():
     assert len( names ) == len( sequences )
 
     sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
+    ymer_dict = {}
+    total_ymers = set()
+
+    for current_seq in range( len( sequences ) ):
+        current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
+        total_ymers |= current_ymers
+        ymer_dict[ names[ current_seq ] ] = current_ymers
 
     if 'tax' in options.clustering:
         if options.lineage:
 
-            ymer_dict = {}
-            total_ymers = set()
             clusters_with_kmers = {}
-
-            for current_seq in range( len( sequences ) ):
-                current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
-                total_ymers |= current_ymers
-                ymer_dict[ names[ current_seq ] ] = current_ymers
 
             clusters = cluster_taxonomically( options, sequence_dict, ymer_dict )
 
@@ -46,30 +46,12 @@ def main():
 
                 for item in cluster_vals:
                     clusters_with_kmers[ cluster_num ] |= ymer_dict[ item[0] ]
-
-
-            min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
-
-            print( "Number of unique kmers: %d." % len( total_ymers ) )
-            print( "Number of clusters: %d." % len( clusters.keys() ) )
-            print( "Minimum cluster size: %d." % min_cluster_size )
-            print( "Median cluster size: %.2f." % median_cluster_size )
-            print( "Average cluster size: %.2f." % avg_cluster_size )
-            print( "Maximum cluster size: %d." % max_cluster_size )
-
         else:
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
     else:
-        ymer_dict = {}
         sorted_ids = sorted( options.id.split( ',' ) )
-
-
-        for current_seq in range( len( sequences ) ):
-            current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
-            ymer_dict[ names[ current_seq ] ] = current_ymers
-
-        clusters_with_names, clusters_with_kmers, total_ymers = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
+        clusters_with_names, clusters_with_kmers = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
 
         for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
@@ -79,20 +61,21 @@ def main():
                 # Get the keys of the clusters that are too large
                 re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, options.number )
 
-        min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
-
         print( "Id threshold: %s." % options.id )
-        print( "Number of unique ymers: %d." % len( total_ymers ) )
-        print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
-        print( "Minimum cluster size: %d." % min_cluster_size )
-        print( "Median cluster size: %.2f." % median_cluster_size )
-        print( "Average cluster size: %.2f." % avg_cluster_size )
-        print( "Maximum cluster size: %d." % max_cluster_size )
 
         output_clusters = {}
         for cluster, names_list in clusters_with_names.items():
             output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         clusters = output_clusters
+
+    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
+
+    print( "Number of unique ymers: %d." % len( total_ymers ) )
+    print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
+    print( "Minimum cluster size: %d." % min_cluster_size )
+    print( "Median cluster size: %.2f." % median_cluster_size )
+    print( "Average cluster size: %.2f." % avg_cluster_size )
+    print( "Maximum cluster size: %d." % max_cluster_size )
 
     write_outputs( options.output, clusters, clusters_with_kmers, sequence_dict, ymer_dict, options.number )
 
@@ -272,23 +255,22 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 current_rank_data = rank_data[ current_id ].lower()
 
                 if current_id in rank_data and current_rank_data not in deleted_clusters:
-                    if current_rank_data not in deleted_clusters:
-                        if current_rank_data not in clusters:
-                            clusters[ current_rank_data ] = list()
-                            clusters_kmers[ current_rank_data ] = set()
+                    if current_rank_data not in clusters:
+                        clusters[ current_rank_data ] = list()
+                        clusters_kmers[ current_rank_data ] = set()
 
-                        clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
-                        clusters_kmers[ current_rank_data ] |= kmer_dict[ current_name ]
+                    clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
+                    clusters_kmers[ current_rank_data ] |= kmer_dict[ current_name ]
 
-                        if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
+                    if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
 
-                            # Put the items back in the pool of choices if our cluster becomes too large
-                            put_large_cluster_back_in_pool( clusters, clusters_kmers, current_rank_data, item )
-                            deleted_clusters.append( current_rank_data )
+                        # Put the items back in the pool of choices if our cluster becomes too large
+                        put_large_cluster_back_in_pool( clusters, clusters_kmers, sequence_dict, current_rank_data )
+                        deleted_clusters.append( current_rank_data )
 
-                        else:
+                    else:
                             del sequence_dict[ current_name ]
-                else:
+                elif current_id not in rank_data:
                     print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
 
     return clusters
@@ -302,14 +284,11 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
         :param kmer_dict: dictionary of sequence name: kmer pairings
 
         :returns: dictionary of clusters created from sequences in sequence_dict
-        :returns: set of all of the kmers from every sequence
     """
     names_list = list( sequence_dict.keys() )
     sequence_list = list( kmer_dict.values() )
     kmer_clusters = {}
     out_clusters = {}
-    total_kmers = set()
-
 
     names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
 
@@ -319,7 +298,6 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
     for index in range( 1, len( sorted_seqs ) ):
         current_seq_ymers = kmer_dict[ names_list[ index ] ]
         inserted = False
-        total_kmers |= current_seq_ymers
 
         if len( current_seq_ymers ) > 0:
 
@@ -344,7 +322,7 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 kmer_clusters[ cluster_number ] = current_seq_ymers
                 out_clusters[ cluster_number ] = [ names_list[ index ] ] 
 
-    return out_clusters, kmer_clusters, total_kmers
+    return out_clusters, kmer_clusters
 
 
 def get_cluster_stats( cluster_dict, kmer_dict ):
@@ -419,7 +397,7 @@ def check_for_id_in_merged_ids( merged_ids, current_id ):
         current_id = merged_ids[ current_id ]
     return current_id
 
-def put_large_cluster_back_in_pool( clusters, clusters_kmers, current_rank_data, item ):
+def put_large_cluster_back_in_pool( clusters, clusters_kmers, sequence_dict, current_rank_data ):
     for item in clusters[ current_rank_data ]:
         sequence_dict[ item[ 0 ] ] = item[ 1 ]
 
