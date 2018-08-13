@@ -58,7 +58,6 @@ def main():
             max_cluster_size = max( [ len( item ) for item in clusters_with_kmers.values() ] )
 
             if max_cluster_size > options.number:
-                # Get the keys of the clusters that are too large
                 re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, options.number )
 
         print( "Id threshold: %s." % options.id )
@@ -284,11 +283,14 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
         :param kmer_dict: dictionary of sequence name: kmer pairings
 
         :returns: dictionary of clusters created from sequences in sequence_dict
+        :returns: dictionary of clusters created from kmers in sequence_dict
+        :returns: dictionary of the minimum similarity between any sequence and its cluster
     """
     names_list = list( sequence_dict.keys() )
     sequence_list = list( kmer_dict.values() )
     kmer_clusters = {}
     out_clusters = {}
+    similarity_cluster = {}
 
     names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
 
@@ -296,6 +298,7 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
 
     kmer_clusters[ cluster_name ] = kmer_dict[ names_list[ 0 ] ]
     out_clusters[ cluster_name ] = [ names_list[ 0 ] ]
+
 
     for index in range( 1, len( sorted_seqs ) ):
         current_seq_ymers = kmer_dict[ names_list[ index ] ]
@@ -312,6 +315,9 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 if percent_similar >= id_threshold:
                     kmer_clusters[ key ] |= current_seq_ymers
 
+                    if percent_similar < similarity_cluster[ key ]:
+                        similarity_cluster[ key ] = percent_similar
+
                     if key not in out_clusters:
                         out_clusters[ key ] = list()
                     out_clusters[ key ].append( names_list[ index ] )
@@ -324,8 +330,9 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 cluster_name = "%d_%f" % ( cluster_number, id_threshold )
                 kmer_clusters[ cluster_name ] = current_seq_ymers
                 out_clusters[  cluster_name ] = [ names_list[ index ] ] 
+                similarity_cluster[ key ] = 1.0
 
-    return out_clusters, kmer_clusters
+    return out_clusters, kmer_clusters, similarity_cluster
 
 
 def get_cluster_stats( cluster_dict, kmer_dict ):
@@ -364,6 +371,7 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_wi
     too_big_clusters = [ item for item in clusters_with_names.keys() \
                                      if len( clusters_with_kmers[ item ] ) > max_clust_size \
                        ]
+
     for current_cluster in too_big_clusters:
         current_seq_dict = {}
         current_ymer_dict = {}
