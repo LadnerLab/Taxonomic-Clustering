@@ -51,7 +51,7 @@ def main():
             sys.exit()
     else:
         sorted_ids = sorted( options.id.split( ',' ) )
-        clusters_with_names, clusters_with_kmers = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
+        clusters_with_names, clusters_with_kmers, similar_clusters = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
 
         for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
@@ -386,7 +386,7 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_wi
             current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
 
 
-        sub_clusters_with_names, sub_clusters_with_kmers = cluster_by_kmers( current_id,
+        sub_clusters_with_names, sub_clusters_with_kmers, kmer_similarities = cluster_by_kmers( current_id,
                                                                              current_seq_dict,
                                                                              current_ymer_dict
                                                                            ) 
@@ -404,6 +404,7 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_wi
 
         del clusters_with_names[ current_cluster ]
         del clusters_with_kmers[ current_cluster ]
+
 
 def check_for_id_in_merged_ids( merged_ids, current_id ):
     if current_id in merged_ids:
