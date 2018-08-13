@@ -298,6 +298,7 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
 
     kmer_clusters[ cluster_name ] = kmer_dict[ names_list[ 0 ] ]
     out_clusters[ cluster_name ] = [ names_list[ 0 ] ]
+    similarity_cluster[ cluster_name ] = 1.0
 
 
     for index in range( 1, len( sorted_seqs ) ):
@@ -330,7 +331,7 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 cluster_name = "%d_%f" % ( cluster_number, id_threshold )
                 kmer_clusters[ cluster_name ] = current_seq_ymers
                 out_clusters[  cluster_name ] = [ names_list[ index ] ] 
-                similarity_cluster[ key ] = 1.0
+                similarity_cluster[ cluster_name ] = 1.0
 
     return out_clusters, kmer_clusters, similarity_cluster
 
