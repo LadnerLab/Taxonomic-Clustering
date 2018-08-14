@@ -72,9 +72,9 @@ def main():
     print( "Average cluster size: %.2f." % avg_cluster_size )
     print( "Maximum cluster size: %d." % max_cluster_size )
 
-    write_outputs( options.output, clusters, clusters_with_kmers, sequence_dict, ymer_dict, options.number )
+    write_outputs( options.output, created_clusters, sequence_dict, ymer_dict, options.number )
 
-def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict, kmer_name_dict, threshold ):
+def write_outputs( out_directory, cluster_dict, sequence_dict, kmer_name_dict, threshold ):
     """
         Writes program outputs to directory specified by the output option on the command line
 
@@ -93,23 +93,23 @@ def write_outputs( out_directory, cluster_dict, kmer_cluster_dict, sequence_dict
 
     for cluster_key, cluster_value in cluster_dict.items():
 
-        names_list = [ item[ 0 ] for item in cluster_value ]
-        sequence_list = [ item[ 1 ] for item in cluster_value ]
-        sub_clusters, sub_cluster_kmers = sub_clusters_from_kmers( { cluster_key: kmer_cluster_dict[ cluster_key ] }, kmer_name_dict, names_list, sequence_list, threshold )
+        names_list = [ item for item in cluster_value.names ]
+        sequence_list = [ item for item in cluster_value.sequences ]
+        sub_clusters = cluster.Cluster.split_clusters_bigger_than_threshold( cluster_value, threshold )
 
         num_lists = 0
 
         if len( sub_clusters ) > 0:
             num_lists = len( sub_clusters )
-            for current_sub_cluster in sub_clusters.keys():
-                write_cluster( current_sub_cluster, sub_clusters[ current_sub_cluster ], sequence_dict )
+            for current_sub_cluster in sub_clusters:
+                current_sub_cluster.write()
 
-                sub_cluster_length = len( sub_cluster_kmers[ current_sub_cluster ] )
-                cluster_size_file.write( current_sub_cluster + '.fasta|' + str( sub_cluster_length ) )
+                sub_cluster_length = current_sub_cluster.get_num_kmers()
+                cluster_size_file.write( current_sub_cluster.name + '.fasta|' + str( sub_cluster_length ) )
                 cluster_size_file.write( '\n' )
         else:
-            write_cluster( str( cluster_key ), cluster_dict[ cluster_key ], sequence_dict )
 
+            cluster_value.write()
             cluster_length = len( kmer_cluster_dict[ cluster_key ] )
             cluster_size_file.write( cluster_key + '.fasta|' + str( cluster_length ) )
             cluster_size_file.write( '\n' )
@@ -256,7 +256,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                         created_clusters[ current_rank_data ] = new_cluster
 
                     created_clusters[ current_rank_data ].add_sequence( current_name, sequence_dict[ current_name ] )
-                    created_clusters[ current_rank_data ].add_sequence_kmers( kmer_dict[ current_name ] )
+                    created_clusters[ current_rank_data ].add_sequence_kmers( current_name, kmer_dict[ current_name ] )
 
                     if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
 
@@ -287,7 +287,6 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
     sequence_list = list( kmer_dict.values() )
     kmer_clusters = {}
     out_clusters = {}
-    similarity_cluster = {}
 
     names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
 
@@ -295,7 +294,6 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
 
     kmer_clusters[ cluster_name ] = kmer_dict[ names_list[ 0 ] ]
     out_clusters[ cluster_name ] = [ names_list[ 0 ] ]
-    similarity_cluster[ cluster_name ] = 1.0
 
 
     for index in range( 1, len( sorted_seqs ) ):
@@ -313,8 +311,6 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 if percent_similar >= id_threshold:
                     kmer_clusters[ key ] |= current_seq_ymers
 
-                    if percent_similar < similarity_cluster[ key ]:
-                        similarity_cluster[ key ] = percent_similar
 
                     if key not in out_clusters:
                         out_clusters[ key ] = list()
@@ -328,9 +324,8 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                 cluster_name = "%d_%f" % ( cluster_number, id_threshold )
                 kmer_clusters[ cluster_name ] = current_seq_ymers
                 out_clusters[  cluster_name ] = [ names_list[ index ] ] 
-                similarity_cluster[ cluster_name ] = 1.0
 
-    return out_clusters, kmer_clusters, similarity_cluster
+    return out_clusters, kmer_clusters
 
 
 def get_cluster_stats( cluster_dict, kmer_dict ):
