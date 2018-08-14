@@ -6,6 +6,7 @@ import statistics
 import copy
 
 import protein_oligo_library as oligo
+import clustering.cluster as cluster
 
 def main():
 
@@ -39,13 +40,8 @@ def main():
 
             clusters_with_kmers = {}
 
-            clusters = cluster_taxonomically( options, sequence_dict, ymer_dict )
+            created_clusters = cluster_taxonomically( options, sequence_dict, ymer_dict )
 
-            for cluster_num, cluster_vals in clusters.items():
-                clusters_with_kmers[ cluster_num ] = set()
-
-                for item in cluster_vals:
-                    clusters_with_kmers[ cluster_num ] |= ymer_dict[ item[0] ]
         else:
             print( "Lineage file must be provided for taxonomic clustering, exiting" )
             sys.exit()
@@ -226,8 +222,8 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
     sequence_tax_id = set( [ oligo.get_taxid_from_name( item ) for item in names ] )
 
     tax_data = oligo.get_taxdata_from_file( options.lineage )
-    clusters = {}
-    clusters_kmers = {}
+    created_clusters = {}
+    clusters_created = list()
 
     merged_ids = { 10969 : 444185, 11619 : 216991, 11630 : 216993,
                    11806 : 353765, 45218 : 2169996, 45222 : 2169994,
@@ -253,18 +249,19 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
                 current_rank_data = rank_data[ current_id ].lower()
 
+
                 if current_id in rank_data and current_rank_data not in deleted_clusters:
-                    if current_rank_data not in clusters:
-                        clusters[ current_rank_data ] = list()
-                        clusters_kmers[ current_rank_data ] = set()
+                    if current_rank_data not in created_clusters:
+                        new_cluster = cluster.Cluster( current_rank_data )
+                        created_clusters[ current_rank_data ] = new_cluster
 
-                    clusters[ current_rank_data ].append( ( current_name, sequence_dict[ current_name ] ) )
-                    clusters_kmers[ current_rank_data ] |= kmer_dict[ current_name ]
+                    created_clusters[ current_rank_data ].add_sequence( current_name, sequence_dict[ current_name ] )
+                    created_clusters[ current_rank_data ].add_sequence_kmers( kmer_dict[ current_name ] )
 
-                    if len( clusters_kmers[ current_rank_data ] ) > options.number and index < len( ranks ) - 1:
+                    if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
 
                         # Put the items back in the pool of choices if our cluster becomes too large
-                        put_large_cluster_back_in_pool( clusters, clusters_kmers, sequence_dict, current_rank_data )
+                        put_large_cluster_back_in_pool( created_clusters, sequence_dict, current_rank_data )
                         deleted_clusters.append( current_rank_data )
 
                     else:
@@ -272,7 +269,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 elif current_id not in rank_data:
                     print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
 
-    return clusters
+    return created_clusters
 
 def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
     """
@@ -425,12 +422,11 @@ def check_for_id_in_merged_ids( merged_ids, current_id ):
         current_id = merged_ids[ current_id ]
     return current_id
 
-def put_large_cluster_back_in_pool( clusters, clusters_kmers, sequence_dict, current_rank_data ):
-    for item in clusters[ current_rank_data ]:
+def put_large_cluster_back_in_pool( clusters, sequence_dict, current_rank_data ):
+    for item in clusters[ current_rank_data ].get_names_and_sequences():
         sequence_dict[ item[ 0 ] ] = item[ 1 ]
 
     del clusters[ current_rank_data ]
-    del clusters_kmers[ current_rank_data ]
                         
 
 def add_program_options( option_parser ):
