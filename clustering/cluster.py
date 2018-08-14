@@ -137,8 +137,5 @@ class Cluster:
     def __str__( self ):
         out_string = ""
         for name, sequence in self.sequence_dict.items():
-            out_string += '> ' + name
-            out_string += '\n'
-            out_string += sequence
-            out_string += '\n'
+            out_string += ">%s \n%s\n" % ( name, sequence )
         return out_string.strip()
