@@ -13,15 +13,16 @@ class Rank( Enum ):
         TAX_NAME = 0
 
 class Cluster:
-    def __init__( self, names, sequences ):
-        self.names = names
-        self.sequence = sequences
-        self.kmer_dict = {}
+    def __init__( self, cluster_identifier):
+        self.names = list()
+        self.sequence = list()
+        self.kmers = set()
         self.sequence_dict = {}
-        self.cluster_size_threshold = 10000
+        self.kmer_size = 0
+        self.sequence_size = 0
 
-
-        self._create_sequence_dict( names, sequences )
+        # Minimum similarity between two sequences in a cluster
+        self._least_similar_sequence = 1.0
 
    
 
@@ -34,20 +35,25 @@ class Cluster:
 
             self.sequence_dict[ current_name ] = current_seq
 
+    def add_sequence( self, name, sequence ):
+        self.names.append( name )
+        self.sequence.append( sequence )
+        self.sequence_dict[ name ] = sequence
+
+        self.sequence_size += 1
+
+    def add_sequence_kmers( self, new_kmers ):
+        self.kmers |= new_kmers
+
     def set_cluster_size_threshold( self, new_thresh ):
         self.cluster_size_threshold = new_thresh
 
+    def set_kmer_dict( self, kmer_dict ):
+        self.kmer_dict = kmer_dict 
 
-class TaxonomicCluster( Cluster ):
-    def __init__( self, names, sequences, lineage_file = None ):
-        super().__init( self, names, sequences )__
+    def get_num_kmers( self ):
+        return len( self.kmers )
 
-        self.lineage_file = lineage_file
+    def get_num_sequences( self ):
+        return self.sequence_size
 
-
-    
-
-
-class KmerCluster( Cluster ):
-    def __init__( self ):
-        super().__init( self, names, sequences )__
