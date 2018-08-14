@@ -63,10 +63,10 @@ def main():
             output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
         clusters = output_clusters
 
-    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( clusters_with_kmers, total_ymers )
+    min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( created_clusters, total_ymers )
 
     print( "Number of unique ymers: %d." % len( total_ymers ) )
-    print( "Number of clusters: %d." % len( clusters_with_kmers.keys() ) )
+    print( "Number of clusters: %d." % len( created_clusters.keys() ) )
     print( "Minimum cluster size: %d." % min_cluster_size )
     print( "Median cluster size: %.2f." % median_cluster_size )
     print( "Average cluster size: %.2f." % avg_cluster_size )
@@ -342,25 +342,20 @@ def get_cluster_stats( cluster_dict, kmer_dict ):
     
         :returns: integer minimum, and maximum cluster sizes, float median and average cluster size
     """
-    min_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
+    min_cluster_size = min( [ item.get_num_kmers() for item in cluster_dict.values() ] )
     median_cluster_size = 0
     avg_cluster_size = 0
-    max_cluster_size = len( list( cluster_dict.values() ) [ 0 ] )
+    max_cluster_size = max( [ item.get_num_kmers() for item in cluster_dict.values() ] )
 
     total_size = 0
     num_clusters = len( cluster_dict.keys() )
 
     for key, current_cluster in cluster_dict.items():
-        cluster_len = len( current_cluster ) 
+        cluster_len = current_cluster.get_num_kmers()
         total_size += cluster_len
-
-        if cluster_len < min_cluster_size:
-            min_cluster_size = cluster_len
-        if cluster_len > max_cluster_size:
-            max_cluster_size = cluster_len
             
     avg_cluster_size = total_size / num_clusters
-    median_cluster_size = statistics.median( sorted( [ len( item ) for item in cluster_dict.values() ] ) )
+    median_cluster_size = statistics.median( sorted( [ item.get_num_kmers() for item in cluster_dict.values() ] ) )
 
     return min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size
         
