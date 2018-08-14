@@ -7,6 +7,7 @@ class Cluster:
         self.names = list()
         self.sequences = list()
         self.kmers = set()
+        self.kmer_dict = {}
         self.sequence_dict = {}
         self.kmer_size = 0
         self.sequence_size = 0
@@ -29,8 +30,9 @@ class Cluster:
 
         self.sequence_size += 1
 
-    def add_sequence_kmers( self, new_kmers ):
+    def add_sequence_kmers( self, name, new_kmers ):
         self.kmers |= new_kmers
+        self.kmer_dict[ name ] = new_kmers
 
         intersection = current_seq_ymers & current_cluster
         percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
@@ -69,4 +71,17 @@ class Cluster:
             out_string += '\n'
         return out_string
             
+    def remove_sequence( self, seq_name ):
+        seq_to_remove = self.sequence_dict[ seq_name ]
+
+        # Remove the sequence from our list of names and sequences
+        self.names.remove( seq_name )
+        self.sequences.remove( seq_to_remove )
+
+        # Remove the sequence's kmers from our set of kmers
+        self.kmers -= self.kmer_dict[ seq_name ]
+
+        # Remove the sequence from our kmer dictionary and sequence dictionary
+        del self.sequence_dict[ seq_name ]
+        del self.kmer_dict[ seq_name ]
 
