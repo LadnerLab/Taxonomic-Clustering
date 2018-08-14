@@ -86,6 +86,47 @@ class Cluster:
 
         return seq_to_remove, seq_to_remove_kmers
 
+    @staticmethod
+    def split_clusters_bigger_than_threshold( cluster_to_split, int_thresh ):
+        
+        out_clusters = list()
+        current_cluster = None
+
+        cluster_size = cluster_to_split.get_num_kmers()
+        cluster_size_original = cluster_size
+
+        original_cluster_name = cluster_to_split.name
+
+        clustered_names = list()
+
+        sub_cluster = 1
+
+        while cluster_to_split.get_num_kmers() > int_thresh and cluster_to_split.sequence_size > 1:
+            current_seq_to_remove_name = cluster_to_split.names[ 0 ]
+            current_seq_to_remove, current_seq_kmers = cluster_to_split.remove_sequence(
+                                                       current_seq_to_remove_name
+                                                       )
+
+            cluster_name = str( original_cluster_name ) + "_" + str( sub_cluster )
+
+            if cluster_name not in clustered_names:
+                new_cluster = Cluster( cluster_name ) 
+                out_clusters.append( new_cluster )
+
+                clustered_names.append( cluster_name )
+                current_cluster = new_cluster
+
+            current_cluster.add_sequence_and_its_kmers( current_seq_to_remove_name,
+                                                        current_seq_to_remove,
+                                                        current_seq_kmers
+                                                      )
+
+            if current_cluster.get_num_kmers() > int_thresh:
+                sub_cluster += 1
+        
+        out_clusters.append( cluster_to_split )
+
+        return out_clusters
 
     def __str__( self ):
         out_string = ""
