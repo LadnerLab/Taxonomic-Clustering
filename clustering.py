@@ -58,7 +58,7 @@ def main():
             max_cluster_size = max( [ len( item ) for item in clusters_with_kmers.values() ] )
 
             if max_cluster_size > options.number:
-                re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, options.number )
+                re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, similar_clusters, current_id, options.number )
 
         print( "Id threshold: %s." % options.id )
 
@@ -368,43 +368,56 @@ def get_cluster_stats( cluster_dict, kmer_dict ):
     return min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size
         
     
-def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, current_id, max_clust_size ):
-    too_big_clusters = [ item for item in clusters_with_names.keys() \
-                                     if len( clusters_with_kmers[ item ] ) > max_clust_size \
+def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, similar_clusters, current_id, max_clust_size ):
+    too_big_clusters = [ item for item in clusters_with_names.keys()
+                                     if len( clusters_with_kmers[ item ] ) > max_clust_size
                        ]
 
-    for current_cluster in too_big_clusters:
-        current_seq_dict = {}
-        current_ymer_dict = {}
-
-        max_key = str( max( [ int( item.split( '_' )[ 0 ] ) for item in list( clusters_with_names.keys() ) ] ) + 1 )
-        max_key += str( "_%f" % current_id )
-
-        sub_names = {}
-        sub_kmers = {}
-        for sequence_name in clusters_with_names[ current_cluster ]:
-            current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
-            current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
+    print( str( len( clusters_with_kmers[ '0_0.300000' ] ) ) )
+    # least_similar_threshold = [  value for key, value in similar_clusters.items() 
+    #                                  if len( clusters_with_kmers[ key ] ) > max_clust_size
+    #                    ]
+    least_similar_threshold = list()
+    for key, value in similar_clusters.items():
+        if len( clusters_with_kmers[ key ] ) > max_clust_size:
+            least_similar_threshold.append( value )
 
 
-        sub_clusters_with_names, sub_clusters_with_kmers, kmer_similarities = cluster_by_kmers( current_id,
-                                                                             current_seq_dict,
-                                                                             current_ymer_dict
-                                                                           ) 
+    for current_cluster_index in range( len( too_big_clusters ) ):
+        current_cluster = too_big_clusters[ current_cluster_index ]
 
-        sub_names.update( sub_clusters_with_names )
-        sub_kmers.update( sub_clusters_with_kmers )
-
-        for current_key in sub_names.keys():
-            clusters_with_names[ max_key ] = sub_names[ current_key ]
-            clusters_with_kmers[ max_key ] = sub_kmers[ current_key ]
+        if least_similar_threshold[ current_cluster_index ] <= current_id:
+            current_seq_dict = {}
+            current_ymer_dict = {}
 
             max_key = str( max( [ int( item.split( '_' )[ 0 ] ) for item in list( clusters_with_names.keys() ) ] ) + 1 )
             max_key += str( "_%f" % current_id )
 
+            sub_names = {}
+            sub_kmers = {}
+            for sequence_name in clusters_with_names[ current_cluster ]:
+                current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
+                current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
 
-        del clusters_with_names[ current_cluster ]
-        del clusters_with_kmers[ current_cluster ]
+
+            sub_clusters_with_names, sub_clusters_with_kmers, kmer_similarities = cluster_by_kmers( current_id,
+                                                                                 current_seq_dict,
+                                                                                 current_ymer_dict
+                                                                               ) 
+
+            sub_names.update( sub_clusters_with_names )
+            sub_kmers.update( sub_clusters_with_kmers )
+
+            for current_key in sub_names.keys():
+                clusters_with_names[ max_key ] = sub_names[ current_key ]
+                clusters_with_kmers[ max_key ] = sub_kmers[ current_key ]
+
+                max_key = str( max( [ int( item.split( '_' )[ 0 ] ) for item in list( clusters_with_names.keys() ) ] ) + 1 )
+                max_key += str( "_%f" % current_id )
+
+
+            del clusters_with_names[ current_cluster ]
+            del clusters_with_kmers[ current_cluster ]
 
 
 def check_for_id_in_merged_ids( merged_ids, current_id ):
