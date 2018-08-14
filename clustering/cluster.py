@@ -52,5 +52,14 @@ class Cluster:
             out_list.append( ( current_name, current_seq ) )
 
         return out_list
+
+    def __str__( self ):
+        out_string = ""
+        for name, sequence in self.sequence_dict.items():
+            out_string += '> ' + name
+            out_string += '\n'
+            out_string += sequence
+            out_string += '\n'
+        return out_string
             
 
