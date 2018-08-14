@@ -51,6 +51,6 @@ class Cluster:
         for current_name, current_seq in self.sequence_dict.items():
             out_list.append( ( current_name, current_seq ) )
 
-
+        return out_list
             
 
