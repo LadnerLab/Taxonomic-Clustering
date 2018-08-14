@@ -14,6 +14,8 @@ class Rank( Enum ):
 
 class Cluster:
     def __init__( self, cluster_identifier):
+
+        self.name = cluster_identifier
         self.names = list()
         self.sequence = list()
         self.kmers = set()
@@ -23,9 +25,6 @@ class Cluster:
 
         # Minimum similarity between two sequences in a cluster
         self._least_similar_sequence = 1.0
-
-   
-
 
 
     def _create_sequence_dict( self, names, sequence ):
@@ -56,4 +55,13 @@ class Cluster:
 
     def get_num_sequences( self ):
         return self.sequence_size
+
+    def get_names_and_sequences( self ):
+        
+        out_list = list()
+
+        for current_name, current_seq in self.sequence_dict.items():
+            out_list.append( ( current_name, current_seq ) )
+
+            
 
