@@ -31,13 +31,14 @@ class Cluster:
         self.sequence_size += 1
 
     def add_sequence_kmers( self, name, new_kmers ):
+
+        intersection = new_kmers & self.kmers
+        percent_similar = ( len( intersection ) / len( new_kmers ) )
+
         self.kmers |= new_kmers
         self.kmer_dict[ name ] = new_kmers
 
-        intersection = current_seq_ymers & current_cluster
-        percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
-
-        if percent_similar < self._least_similar_sequence:
+        if self.sequence_size > 1 and percent_similar < self._least_similar_sequence:
             self._least_similar_sequence = percent_similar
 
     def add_sequence_and_its_kmers( self, name, sequence, kmer_set ):
@@ -81,7 +82,10 @@ class Cluster:
         del self.sequence_dict[ seq_name ]
         del self.kmer_dict[ seq_name ]
 
+        self.sequence_size -= 1
+
         return seq_to_remove, seq_to_remove_kmers
+
 
     def __str__( self ):
         out_string = ""
