@@ -40,6 +40,9 @@ class Cluster:
         if percent_similar < self._least_similar_sequence:
             self._least_similar_sequence = percent_similar
 
+    def add_sequence_and_its_kmers( self, name, sequence, kmer_set ):
+        self.add_sequence( name, sequence )
+        self.add_sequence_kmers( name, kmer_set )
 
     def set_cluster_size_threshold( self, new_thresh ):
         self.cluster_size_threshold = new_thresh
@@ -48,6 +51,7 @@ class Cluster:
         self.kmer_dict = kmer_dict 
 
     def get_num_kmers( self ):
+        self.kmer_size = len( self.kmers )
         return len( self.kmers )
 
     def get_num_sequences( self ):
@@ -61,18 +65,10 @@ class Cluster:
             out_list.append( ( current_name, current_seq ) )
 
         return out_list
-
-    def __str__( self ):
-        out_string = ""
-        for name, sequence in self.sequence_dict.items():
-            out_string += '> ' + name
-            out_string += '\n'
-            out_string += sequence
-            out_string += '\n'
-        return out_string
-            
+           
     def remove_sequence( self, seq_name ):
         seq_to_remove = self.sequence_dict[ seq_name ]
+        seq_to_remove_kmers = self.kmer_dict[ seq_name ]
 
         # Remove the sequence from our list of names and sequences
         self.names.remove( seq_name )
@@ -85,3 +81,13 @@ class Cluster:
         del self.sequence_dict[ seq_name ]
         del self.kmer_dict[ seq_name ]
 
+        return seq_to_remove, seq_to_remove_kmers
+
+    def __str__( self ):
+        out_string = ""
+        for name, sequence in self.sequence_dict.items():
+            out_string += '> ' + name
+            out_string += '\n'
+            out_string += sequence
+            out_string += '\n'
+        return out_string
