@@ -86,6 +86,12 @@ class Cluster:
 
         return seq_to_remove, seq_to_remove_kmers
 
+    def write( self ):
+        out_file = open( self.name + '.fasta', 'w' )
+
+        out_file.write( str( self ) )
+        out_file.close()
+
     @staticmethod
     def split_clusters_bigger_than_threshold( cluster_to_split, int_thresh ):
         
@@ -135,4 +141,4 @@ class Cluster:
             out_string += '\n'
             out_string += sequence
             out_string += '\n'
-        return out_string
+        return out_string.strip()
