@@ -72,9 +72,9 @@ def main():
     print( "Average cluster size: %.2f." % avg_cluster_size )
     print( "Maximum cluster size: %d." % max_cluster_size )
 
-    write_outputs( options.output, created_clusters, sequence_dict, ymer_dict, options.number )
+    write_outputs( options.output, created_clusters, options.number )
 
-def write_outputs( out_directory, cluster_dict, sequence_dict, kmer_name_dict, threshold ):
+def write_outputs( out_directory, cluster_dict, threshold ):
     """
         Writes program outputs to directory specified by the output option on the command line
 
@@ -108,13 +108,10 @@ def write_outputs( out_directory, cluster_dict, sequence_dict, kmer_name_dict, t
                 cluster_size_file.write( current_sub_cluster.name + '.fasta|' + str( sub_cluster_length ) )
                 cluster_size_file.write( '\n' )
         else:
-
             cluster_value.write()
             cluster_length = len( kmer_cluster_dict[ cluster_key ] )
             cluster_size_file.write( cluster_key + '.fasta|' + str( cluster_length ) )
             cluster_size_file.write( '\n' )
-
-                
 
         if num_lists > 1:
             overflow_clusters += 1
