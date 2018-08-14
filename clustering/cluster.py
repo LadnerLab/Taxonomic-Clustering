@@ -1,23 +1,11 @@
 #!/usr/bin/env python3
-from enum import enum
-
-class Rank( Enum ):
-        SUPERKINGDOM = 8
-        KINGDOM = 7
-        PHYLUM = 6
-        CLASS = 5
-        ORDER = 4
-        FAMILY = 3
-        GENUS = 2
-        SPECIES = 1
-        TAX_NAME = 0
 
 class Cluster:
     def __init__( self, cluster_identifier):
 
         self.name = cluster_identifier
         self.names = list()
-        self.sequence = list()
+        self.sequences = list()
         self.kmers = set()
         self.sequence_dict = {}
         self.kmer_size = 0
@@ -36,7 +24,7 @@ class Cluster:
 
     def add_sequence( self, name, sequence ):
         self.names.append( name )
-        self.sequence.append( sequence )
+        self.sequences.append( sequence )
         self.sequence_dict[ name ] = sequence
 
         self.sequence_size += 1
@@ -62,6 +50,7 @@ class Cluster:
 
         for current_name, current_seq in self.sequence_dict.items():
             out_list.append( ( current_name, current_seq ) )
+
 
             
 
