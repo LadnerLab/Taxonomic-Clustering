@@ -47,7 +47,7 @@ def main():
             sys.exit()
     else:
         sorted_ids = sorted( options.id.split( ',' ) )
-        clusters_created = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
+        created_clusters = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
 
         for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
@@ -62,11 +62,6 @@ def main():
                                  )
 
         print( "Id threshold: %s." % options.id )
-
-        output_clusters = {}
-        for cluster, names_list in clusters_with_names.items():
-            output_clusters[ cluster ] = [ ( name, sequence_dict[ name ] ) for name in names_list ]
-        clusters = output_clusters
 
     min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size = get_cluster_stats( created_clusters, total_ymers )
 
@@ -114,7 +109,7 @@ def write_outputs( out_directory, cluster_dict, threshold ):
                 cluster_size_file.write( '\n' )
         else:
             cluster_value.write()
-            cluster_length = len( kmer_cluster_dict[ cluster_key ] )
+            cluster_length = cluster_value.get_num_kmers()
             cluster_size_file.write( cluster_key + '.fasta|' + str( cluster_length ) )
             cluster_size_file.write( '\n' )
 
@@ -284,7 +279,7 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
         :returns: dictionary of clusters created from sequences in sequence_dict
     """
     names_list = list( sequence_dict.keys() )
-    sequence_list = list( kmer_dict.values() )
+    sequence_list = list( sequence_dict.values() )
 
     out_clusters = {}
 
@@ -313,7 +308,7 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
             dict_items = out_clusters.items()
             for cluster_name, current_cluster in dict_items:
 
-                intersection = current_seq_ymers & current_cluster.kmer_dict
+                intersection = current_seq_ymers & current_cluster.kmers
                 percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
                 if percent_similar >= id_threshold:
@@ -327,14 +322,14 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
                     break
                 
             if not inserted:
-                cluster_number = len( kmer_clusters.keys() ) + 1
+                cluster_number = len( out_clusters.keys() ) + 1
                 cluster_name = "%d_%f" % ( cluster_number, id_threshold )
 
-                out_clusters[ cluster_name ] = Cluster( cluster_name )
-                out_cluster.add_sequence_and_its_kmers( current_seq_name,
-                                                        sequence_dict[ current_seq_name ],
-                                                        current_seq_ymers
-                                                      )
+                out_clusters[ cluster_name ] = cluster.Cluster( cluster_name )
+                out_clusters[ cluster_name ].add_sequence_and_its_kmers( current_seq_name,
+                                                                         sequence_dict[ current_seq_name ],
+                                                                         current_seq_ymers
+                                                                       )
 
     return out_clusters
 
@@ -372,14 +367,12 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters, current_id, max_clust_
         current_cluster = too_big_clusters[ current_cluster_index ]
         least_similar_threshold = current_cluster.get_least_similar_sequence()
 
-        if least_similar_threshold[ current_cluster_index ] <= current_id:
-            current_seq_dict = {}
-            current_ymer_dict = {}
+        if least_similar_threshold <= current_id:
+            new_cluster = cluster.Cluster( current_cluster.name )
 
             max_key = str( max( [ int( item.name.split( '_' )[ 0 ] ) for item in list( clusters.values() ) ] ) + 1 )
             max_key += str( "_%f" % current_id )
 
-            sub_clusters = {}
             for sequence_name in clusters[ current_cluster ].names:
                 current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
                 current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
@@ -389,20 +382,19 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters, current_id, max_clust_
                                              current_seq_dict,
                                              current_ymer_dict
                                            ) 
+            sub_names.update( sub_clusters )
 
-            sub_names.update( sub_clusters_with_names )
-            sub_kmers.update( sub_clusters_with_kmers )
+            for current_sub_cluster in sub_clusters:
+                current_name = current_sub_cluster.name
 
-            for current_key in sub_names.keys():
-                clusters_with_names[ max_key ] = sub_names[ current_key ]
-                clusters_with_kmers[ max_key ] = sub_kmers[ current_key ]
+                clusters_with_names[ max_key ] = sub_names[ current_name ]
+                clusters_with_kmers[ max_key ] = sub_kmers[ current_name ]
 
                 max_key = str( max( [ int( item.split( '_' )[ 0 ] ) for item in list( clusters_with_names.keys() ) ] ) + 1 )
                 max_key += str( "_%f" % current_id )
 
 
-            del clusters_with_names[ current_cluster ]
-            del clusters_with_kmers[ current_cluster ]
+            del clusters[ current_cluster.name ]
 
 
 def check_for_id_in_merged_ids( merged_ids, current_id ):
