@@ -277,52 +277,61 @@ def cluster_by_kmers( id_threshold, sequence_dict, kmer_dict ):
         :param kmer_dict: dictionary of sequence name: kmer pairings
 
         :returns: dictionary of clusters created from sequences in sequence_dict
-        :returns: dictionary of clusters created from kmers in sequence_dict
-        :returns: dictionary of the minimum similarity between any sequence and its cluster
     """
     names_list = list( sequence_dict.keys() )
     sequence_list = list( kmer_dict.values() )
-    kmer_clusters = {}
+
     out_clusters = {}
 
-    names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list, sequence_list, key = 'descending' )
+    names_list, sorted_seqs = oligo.sort_sequences_by_length( names_list,
+                                                              sequence_list,
+                                                              key = 'descending'
+                                                            )
 
     cluster_name = "0_%f" % id_threshold
 
-    kmer_clusters[ cluster_name ] = kmer_dict[ names_list[ 0 ] ]
-    out_clusters[ cluster_name ] = [ names_list[ 0 ] ]
+    out_clusters[ cluster_name ] = cluster.Cluster( cluster_name )
+    out_clusters[ cluster_name ].add_sequence_and_its_kmers( names_list[ 0 ],
+                                                             sorted_seqs[ 0 ],
+                                                             kmer_dict[ names_list[ 0 ] ]
+                                                           )
 
 
     for index in range( 1, len( sorted_seqs ) ):
-        current_seq_ymers = kmer_dict[ names_list[ index ] ]
+        current_seq_name = names_list[ index ]
+        current_seq_ymers = kmer_dict[ current_seq_name ]
+
         inserted = False
 
         if len( current_seq_ymers ) > 0:
 
-            dict_items = kmer_clusters.items()
-            for key, current_cluster in dict_items:
+            dict_items = out_clusters.items()
+            for cluster_name, current_cluster in dict_items:
 
-                intersection = current_seq_ymers & current_cluster
+                intersection = current_seq_ymers & current_cluster.kmer_dict
                 percent_similar = ( len( intersection ) / len( current_seq_ymers ) )
 
                 if percent_similar >= id_threshold:
-                    kmer_clusters[ key ] |= current_seq_ymers
+                    current_cluster.add_sequence_and_its_kmers( current_seq_name,
+                                                                sequence_dict[ current_seq_name ],
+                                                                current_seq_ymers
+                                                              )
 
 
-                    if key not in out_clusters:
-                        out_clusters[ key ] = list()
-                    out_clusters[ key ].append( names_list[ index ] )
                     inserted = True
                     break
                 
             if not inserted:
                 cluster_number = len( kmer_clusters.keys() ) + 1
-                
                 cluster_name = "%d_%f" % ( cluster_number, id_threshold )
-                kmer_clusters[ cluster_name ] = current_seq_ymers
-                out_clusters[  cluster_name ] = [ names_list[ index ] ] 
 
-    return out_clusters, kmer_clusters
+                out_clusters[ cluster_name ] = Cluster( cluster_name )
+                out_cluster.add_sequence_and_its_kmers( current_seq_name,
+                                                        sequence_dict[ current_seq_name ],
+                                                        current_seq_ymers
+                                                      )
+
+    return out_clusters
 
 
 def get_cluster_stats( cluster_dict, kmer_dict ):
