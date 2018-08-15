@@ -32,18 +32,20 @@ class Cluster:
 
     def add_sequence_kmers( self, name, new_kmers ):
 
-        intersection = new_kmers & self.kmers
-        percent_similar = ( len( intersection ) / len( new_kmers ) )
+        if len( new_kmers ) > 0:
+            intersection = new_kmers & self.kmers
+            percent_similar = ( len( intersection ) / len( new_kmers ) )
 
-        self.kmers |= new_kmers
-        self.kmer_dict[ name ] = new_kmers
+            self.kmers |= new_kmers
+            self.kmer_dict[ name ] = new_kmers
 
-        if self.sequence_size > 1 and percent_similar < self._least_similar_sequence:
-            self._least_similar_sequence = percent_similar
+            if self.sequence_size > 1 and percent_similar < self._least_similar_sequence:
+                self._least_similar_sequence = percent_similar
 
     def add_sequence_and_its_kmers( self, name, sequence, kmer_set ):
-        self.add_sequence( name, sequence )
-        self.add_sequence_kmers( name, kmer_set )
+        if len( kmer_set ) > 0:
+            self.add_sequence( name, sequence )
+            self.add_sequence_kmers( name, kmer_set )
 
     def set_cluster_size_threshold( self, new_thresh ):
         self.cluster_size_threshold = new_thresh
