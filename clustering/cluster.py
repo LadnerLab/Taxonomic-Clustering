@@ -51,6 +51,9 @@ class Cluster:
     def set_kmer_dict( self, kmer_dict ):
         self.kmer_dict = kmer_dict 
 
+    def get_least_similar_sequence( self ):
+        return self._least_similar_sequence
+    
     def get_num_kmers( self ):
         self.kmer_size = len( self.kmers )
         return len( self.kmers )
