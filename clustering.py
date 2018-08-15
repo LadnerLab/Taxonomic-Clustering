@@ -47,14 +47,19 @@ def main():
             sys.exit()
     else:
         sorted_ids = sorted( options.id.split( ',' ) )
-        clusters_with_names, clusters_with_kmers, similar_clusters = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
+        clusters_created = cluster_by_kmers( float( sorted_ids[ 0 ] ), sequence_dict, ymer_dict )
 
         for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
-            max_cluster_size = max( [ len( item ) for item in clusters_with_kmers.values() ] )
+            max_cluster_size = max( [ item.get_num_kmers() for item in clusters_created.values() ] )
 
             if max_cluster_size > options.number:
-                re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, similar_clusters, current_id, options.number )
+                re_cluster_kmers( sequence_dict,
+                                  ymer_dict,
+                                  clusters_created,
+                                  current_id,
+                                  options.number
+                                 )
 
         print( "Id threshold: %s." % options.id )
 
@@ -360,43 +365,30 @@ def get_cluster_stats( cluster_dict, kmer_dict ):
 
     return min_cluster_size, median_cluster_size, avg_cluster_size, max_cluster_size
         
-    
-def re_cluster_kmers( sequence_dict, ymer_dict, clusters_with_names, clusters_with_kmers, similar_clusters, current_id, max_clust_size ):
-    too_big_clusters = [ item for item in clusters_with_names.keys()
-                                     if len( clusters_with_kmers[ item ] ) > max_clust_size
-                       ]
-
-    print( str( len( clusters_with_kmers[ '0_0.300000' ] ) ) )
-    # least_similar_threshold = [  value for key, value in similar_clusters.items() 
-    #                                  if len( clusters_with_kmers[ key ] ) > max_clust_size
-    #                    ]
-    least_similar_threshold = list()
-    for key, value in similar_clusters.items():
-        if len( clusters_with_kmers[ key ] ) > max_clust_size:
-            least_similar_threshold.append( value )
-
+def re_cluster_kmers( sequence_dict, ymer_dict, clusters, current_id, max_clust_size ):
+    too_big_clusters = get_too_big_clusters( clusters, max_clust_size )
 
     for current_cluster_index in range( len( too_big_clusters ) ):
         current_cluster = too_big_clusters[ current_cluster_index ]
+        least_similar_threshold = current_cluster.get_least_similar_sequence()
 
         if least_similar_threshold[ current_cluster_index ] <= current_id:
             current_seq_dict = {}
             current_ymer_dict = {}
 
-            max_key = str( max( [ int( item.split( '_' )[ 0 ] ) for item in list( clusters_with_names.keys() ) ] ) + 1 )
+            max_key = str( max( [ int( item.name.split( '_' )[ 0 ] ) for item in list( clusters.values() ) ] ) + 1 )
             max_key += str( "_%f" % current_id )
 
-            sub_names = {}
-            sub_kmers = {}
-            for sequence_name in clusters_with_names[ current_cluster ]:
+            sub_clusters = {}
+            for sequence_name in clusters[ current_cluster ].names:
                 current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
                 current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
 
 
-            sub_clusters_with_names, sub_clusters_with_kmers, kmer_similarities = cluster_by_kmers( current_id,
-                                                                                 current_seq_dict,
-                                                                                 current_ymer_dict
-                                                                               ) 
+            sub_clusters = cluster_by_kmers( current_id,
+                                             current_seq_dict,
+                                             current_ymer_dict
+                                           ) 
 
             sub_names.update( sub_clusters_with_names )
             sub_kmers.update( sub_clusters_with_kmers )
@@ -424,6 +416,16 @@ def put_large_cluster_back_in_pool( clusters, sequence_dict, current_rank_data )
 
     del clusters[ current_rank_data ]
                         
+def get_too_big_clusters( clusters, max_clust_size ):
+    clusters_too_large = [
+                           item for item in clusters.values() \
+                           if item.get_num_kmers > max_clust_size
+                         ]
+    return clusters_too_large
+    
+def get_least_similar_threshold_from_clusters( clusters_to_check ):
+    return min( [ item.get_least_similar_sequence() for item in clusters_to_check.values() ] )
+    
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
