@@ -51,12 +51,12 @@ def main():
 
         for current_id in sorted_ids[ 1:: ]:
             current_id = float( current_id )
-            max_cluster_size = max( [ item.get_num_kmers() for item in clusters_created.values() ] )
+            max_cluster_size = max( [ item.get_num_kmers() for item in created_clusters.values() ] )
 
             if max_cluster_size > options.number:
                 re_cluster_kmers( sequence_dict,
                                   ymer_dict,
-                                  clusters_created,
+                                  created_clusters,
                                   current_id,
                                   options.number
                                  )
@@ -373,7 +373,10 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters, current_id, max_clust_
             max_key = str( max( [ int( item.name.split( '_' )[ 0 ] ) for item in list( clusters.values() ) ] ) + 1 )
             max_key += str( "_%f" % current_id )
 
-            for sequence_name in clusters[ current_cluster ].names:
+            current_seq_dict = {}
+            current_ymer_dict = {}
+            sub_names = {}
+            for sequence_name in clusters[ current_cluster.name ].names:
                 current_seq_dict[ sequence_name ] = sequence_dict[ sequence_name ]
                 current_ymer_dict[ sequence_name ] = ymer_dict[ sequence_name ]
 
@@ -382,17 +385,14 @@ def re_cluster_kmers( sequence_dict, ymer_dict, clusters, current_id, max_clust_
                                              current_seq_dict,
                                              current_ymer_dict
                                            ) 
-            sub_names.update( sub_clusters )
 
-            for current_sub_cluster in sub_clusters:
+            for current_sub_cluster in sub_clusters.values():
                 current_name = current_sub_cluster.name
-
-                clusters_with_names[ max_key ] = sub_names[ current_name ]
-                clusters_with_kmers[ max_key ] = sub_kmers[ current_name ]
-
-                max_key = str( max( [ int( item.split( '_' )[ 0 ] ) for item in list( clusters_with_names.keys() ) ] ) + 1 )
+                max_key = str( max( [ int( item.name.split( '_' )[ 0 ] ) for item in list( clusters.values() ) ] ) + 1 )
                 max_key += str( "_%f" % current_id )
 
+                current_sub_cluster.name = max_key
+                clusters[ max_key ] = current_sub_cluster
 
             del clusters[ current_cluster.name ]
 
@@ -411,7 +411,7 @@ def put_large_cluster_back_in_pool( clusters, sequence_dict, current_rank_data )
 def get_too_big_clusters( clusters, max_clust_size ):
     clusters_too_large = [
                            item for item in clusters.values() \
-                           if item.get_num_kmers > max_clust_size
+                           if item.get_num_kmers() > max_clust_size
                          ]
     return clusters_too_large
     
