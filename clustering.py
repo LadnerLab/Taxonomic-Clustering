@@ -30,6 +30,29 @@ def main():
     ymer_dict = {}
     total_ymers = set()
 
+    missing_id_key = {
+                       10969	: 444185,
+                       11619	: 2169991,
+                       11630	: 2169993,
+                       11806	: 353765,
+                       45218	: 2169996,
+                       45222	: 2169994,
+                       45709	: 2169992,
+                       489502	: 10407,
+                       587201	: 10255,
+                       587202	: 10255,
+                       587203	: 10255,
+                       1173522	: 11723,
+                       1554474	: 1511807,
+                       1554482	: 1330068,
+                       1554483	: 1330491,
+                       1554492	: 1330066,
+                       1554494	: 1307800,
+                       1554498	: 1511784,
+                       1559366	: 1513237,
+                       1560037	: 1131483
+                     }
+
     for current_seq in range( len( sequences ) ):
         current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
         total_ymers |= current_ymers
