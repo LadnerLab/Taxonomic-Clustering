@@ -205,50 +205,54 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
     """
 
     names = sequence_dict.keys()
+
+    if options.start is None:
+        start_ranks = [ 'FAMILY' ]
+    else:
+        start_ranks = options.start
     # Get the ranks descending order
     ranks = reversed( sorted(
-                             [ oligo.Rank[ item.upper() ].value for item in options.start ]
+                             [ oligo.Rank[ item.upper() ].value for item in start_ranks ]
                             )
                     )
 
     ranks = [ oligo.Rank( item ).name for item in ranks ]
     sequence_dict = copy.deepcopy( sequence_dict )
-    
-    current_rank = oligo.Rank[ options.start[ 0 ].upper() ]
-    if options.start is None:
-        current_rank = oligo.Rank[ 'FAMILY' ]
 
-    rank_map = c
-    # here
+    current_rank = ranks[ 0 ]
+
+    rank_map = oligo.parse_rank_map( options.rank_map )
+
     sequence_tax_id = set( [ oligo.get_taxid_from_name( item ) for item in names ] )
 
     tax_data = oligo.get_taxdata_from_file( options.lineage )
+    tax_data = oligo.fill_tax_gaps( tax_data, rank_map )
+
     created_clusters = {}
     clusters_created = list()
 
     merged_ids = {
-                       10969	: 444185,
-                       11619	: 2169991,
-                       11630	: 2169993,
-                       11806	: 353765,
-                       45218	: 2169996,
-                       45222	: 2169994,
-                       45709	: 2169992,
-                       489502	: 10407,
-                       587201	: 10255,
-                       587202	: 10255,
-                       587203	: 10255,
-                       1173522	: 11723,
-                       1554474	: 1511807,
-                       1554482	: 1330068,
-                       1554483	: 1330491,
-                       1554492	: 1330066,
-                       1554494	: 1307800,
-                       1554498	: 1511784,
-                       1559366	: 1513237,
-                       1560037	: 1131483
+                       10969   : 444185,
+                       11619   : 2169991,
+                       11630   : 2169993,
+                       11806   : 353765,
+                       45218   : 2169996,
+                       45222   : 2169994,
+                       45709   : 2169992,
+                       489502  : 10407,
+                       587201  : 10255,
+                       587202  : 10255,
+                       587203  : 10255,
+                       1173522 : 11723,
+                       1554474 : 1511807,
+                       1554482 : 1330068,
+                       1554483 : 1330491,
+                       1554492 : 1330066,
+                       1554494 : 1307800,
+                       1554498 : 1511784,
+                       1559366 : 1513237,
+                       1560037 : 1131483
                      }
-
 
     current_rank = oligo.Rank[ ranks [ len( ranks ) - 1 ] ].value 
     index = 0
