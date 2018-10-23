@@ -96,11 +96,12 @@ def write_outputs( out_directory, cluster_dict, threshold ):
 
         names_list = [ item for item in cluster_value.names ]
         sequence_list = [ item for item in cluster_value.sequences ]
-        sub_clusters = cluster.Cluster.split_clusters_bigger_than_threshold( cluster_value, threshold )
 
         num_lists = 0
 
-        if len( sub_clusters ) > 0:
+        if cluster_value.get_num_kmers() > threshold:
+
+            sub_clusters = cluster.Cluster.split_clusters_bigger_than_threshold( cluster_value, threshold )
             num_lists = len( sub_clusters )
             for current_sub_cluster in sub_clusters:
                 current_sub_cluster.write()
@@ -251,7 +252,8 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                        1554494 : 1307800,
                        1554498 : 1511784,
                        1559366 : 1513237,
-                       1560037 : 1131483
+                       1560037 : 1131483,
+                       2169701 : 11027
                      }
 
     current_rank = oligo.Rank[ ranks [ len( ranks ) - 1 ] ].value 
@@ -268,7 +270,13 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
         if len( sequence_dict ) > 0:
             for current_name in list( sequence_dict.keys() ):
 
-                current_id = int( oligo.get_taxid_from_name( current_name ) )
+                current_id = oligo.get_taxid_from_name( current_name )
+                if current_id:
+                    current_id = int( current_id )
+                else:
+                    print( "No id found for: %s" % current_name )
+                    continue
+
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
                 current_rank_data = rank_data[ current_id ].lower()
@@ -279,8 +287,9 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                         new_cluster = cluster.Cluster( current_rank_data )
                         created_clusters[ current_rank_data ] = new_cluster
 
-                    created_clusters[ current_rank_data ].add_sequence( current_name, sequence_dict[ current_name ] )
-                    created_clusters[ current_rank_data ].add_sequence_kmers( current_name, kmer_dict[ current_name ] )
+#                    created_clusters[ current_rank_data ].add_sequence( current_name, sequence_dict[ current_name ] )
+#                    created_clusters[ current_rank_data ].add_sequence_kmers( current_name, kmer_dict[ current_name ] )
+                    created_clusters[ current_rank_data ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
 
                     if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
 
