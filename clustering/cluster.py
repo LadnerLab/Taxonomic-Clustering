@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os.path
 
 class Cluster:
     def __init__( self, cluster_identifier):
@@ -82,6 +83,7 @@ class Cluster:
 
         # Remove the sequence's kmers from our set of kmers
         self.kmers -= self.kmer_dict[ seq_name ]
+        self.kmer_size = len( self.kmers )
 
         # Remove the sequence from our kmer dictionary and sequence dictionary
         del self.sequence_dict[ seq_name ]
@@ -94,7 +96,7 @@ class Cluster:
     def write( self ):
         if self.sequence_size > 0:
             file_name = '_'.join( self.name.split() )
-            out_file = open( file_name + '.fasta', 'w' )
+            out_file = open( file_name + '.fasta', 'a' )
 
             out_file.write( str( self ) )
             out_file.close()
