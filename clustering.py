@@ -300,13 +300,11 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 if current_id:
                     current_id = int( current_id )
                 else:
-                    print( "No id found for: %s" % current_name )
                     rep_id = get_repid_from_name( current_name )
 
                     for current in reference_names:
                         if rep_id in current:
                             current_id = int( oligo.get_taxid_from_name( current ) )
-                            print( current_id )
 
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
