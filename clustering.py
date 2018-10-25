@@ -222,15 +222,39 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
     current_rank = ranks[ 0 ]
 
+    reference_names, reference_seqs = oligo.read_fasta_lists( options.unclustered )
+
     rank_map = oligo.parse_rank_map( options.rank_map )
 
-    sequence_tax_id = set( [ oligo.get_taxid_from_name( item ) for item in names ] )
+    created_clusters = {}
+    clusters_created = list()
+
+    sequence_tax_id = set()
+    for current_name in names:
+        added = False
+        if 'TaxID' not in current_name:
+            rep_id = get_repid_from_name( current_name )
+
+            for current in reference_names:
+                if rep_id in current:
+                    current_id = int( oligo.get_taxid_from_name( current ) )
+                    sequence_tax_id.add( current_id )
+                    added = True
+            if not added:
+                if 'NoID' not in created_clusters:
+                    noid_clusters = cluster.Cluster( 'NoID' )
+                    created_clusters[ 'NoID' ] = noid_clusters
+                created_clusters[ 'NoID' ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
+
+        else:
+            sequence_tax_id.add( oligo.get_taxid_from_name( current_name ) )
+
 
     tax_data = oligo.get_taxdata_from_file( options.lineage )
     tax_data = oligo.fill_tax_gaps( tax_data, rank_map )
 
-    created_clusters = {}
-    clusters_created = list()
+    del reference_seqs
+
 
     merged_ids = {
                        10969   : 444185,
@@ -260,6 +284,8 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
     index = 0
     for index in range( len( ranks ) ):
         current_rank = oligo.Rank[ ranks[ index ] ].value
+
+        
         rank_data = oligo.group_seq_from_taxid( sequence_tax_id,
                                                 merged_ids,
                                                 tax_data,
@@ -275,11 +301,17 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                     current_id = int( current_id )
                 else:
                     print( "No id found for: %s" % current_name )
-                    continue
+                    rep_id = get_repid_from_name( current_name )
+
+                    for current in reference_names:
+                        if rep_id in current:
+                            current_id = int( oligo.get_taxid_from_name( current ) )
+                            print( current_id )
 
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
-                current_rank_data = rank_data[ current_id ].lower()
+                if current_id:
+                    current_rank_data = rank_data[ current_id ].lower()
 
 
                 if current_id in rank_data and current_rank_data not in deleted_clusters:
@@ -287,8 +319,6 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                         new_cluster = cluster.Cluster( current_rank_data )
                         created_clusters[ current_rank_data ] = new_cluster
 
-#                    created_clusters[ current_rank_data ].add_sequence( current_name, sequence_dict[ current_name ] )
-#                    created_clusters[ current_rank_data ].add_sequence_kmers( current_name, kmer_dict[ current_name ] )
                     created_clusters[ current_rank_data ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
 
                     if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
@@ -455,6 +485,13 @@ def get_least_similar_threshold_from_clusters( clusters_to_check ):
     return min( [ item.get_least_similar_sequence() for item in clusters_to_check.values() ] )
     
 
+def get_repid_from_name( name ):
+
+    repid = name.split( 'RepID=' )[ 1 ].strip()
+
+    return repid
+
+
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
     option_parser.add_option( '-l', '--lineage', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
@@ -496,6 +533,9 @@ def add_program_options( option_parser ):
                               help = ( "Name of file containing mappings of "
                                        "taxids to level of taxonomic hierarchy."
                                      )
+                            )
+    option_parser.add_option( '-u', '--unclustered', 
+                              help = "Name of unclusstered data file"
                             )
 
 if __name__ == '__main__':
