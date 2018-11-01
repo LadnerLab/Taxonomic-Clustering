@@ -236,7 +236,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
             rep_id = get_repid_from_name( current_name )
 
             for current in reference_names:
-                if rep_id in current:
+                if rep_id and rep_id in current:
                     current_id = int( oligo.get_taxid_from_name( current ) )
                     sequence_tax_id.add( current_id )
                     added = True
@@ -303,7 +303,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                     rep_id = get_repid_from_name( current_name )
 
                     for current in reference_names:
-                        if rep_id in current:
+                        if rep_id and rep_id in current:
                             current_id = int( oligo.get_taxid_from_name( current ) )
 
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
@@ -485,7 +485,10 @@ def get_least_similar_threshold_from_clusters( clusters_to_check ):
 
 def get_repid_from_name( name ):
 
-    repid = name.split( 'RepID=' )[ 1 ].strip()
+    try:
+        repid = name.split( 'RepID=' )[ 1 ].strip()
+    except:
+        return None
 
     return repid
 
