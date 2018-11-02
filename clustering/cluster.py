@@ -95,7 +95,7 @@ class Cluster:
 
     def write( self ):
         if self.sequence_size > 0:
-            file_name = '_'.join( self.name.split() )
+            file_name = self.name.replace( ' ', '_' )
             out_file = open( file_name + '.fasta', 'a' )
 
             out_file.write( str( self ) )
