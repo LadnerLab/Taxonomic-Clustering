@@ -232,7 +232,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
     sequence_tax_id = set()
     for current_name in names:
         added = False
-        if 'TaxID' not in current_name:
+        if 'TaxID' not in current_name and 'OX' not in current_name:
             rep_id = get_repid_from_name( current_name )
 
             for current in reference_names:
