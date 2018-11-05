@@ -133,7 +133,7 @@ def write_outputs( out_directory, cluster_dict, threshold ):
 def write_cluster( file_name, sequence_names, sequence_dict ):
     names_list = list()
     sequence_list = list()
-    file_name.replace( ' ', '_' )
+    file_name = file_name.replace( ' ', '_' )
 
     for current_seq in sequence_names:
         names_list.append( current_seq )
@@ -186,9 +186,8 @@ def sub_clusters_from_kmers( cluster_to_split, kmer_name_dict, names_list, seque
     
     
 def write_large_cluster( names_list, sequence_list, file_name ):
-    dir_for_clusters = "large_clusters"
-
     file_name = file_name.replace( ' ', '_' )
+    dir_for_clusters = "large_clusters"
     if not os.path.exists( dir_for_clusters ):
         os.mkdir( dir_for_clusters )
     os.chdir( dir_for_clusters )
