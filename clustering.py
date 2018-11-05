@@ -26,10 +26,10 @@ def main():
 
     assert len( names ) == len( sequences )
 
-    sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
+    sequence_dict = create_seq_dict( names, sequences )
+
     ymer_dict = {}
     total_ymers = set()
-
 
     for current_seq in range( len( sequences ) ):
         current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
