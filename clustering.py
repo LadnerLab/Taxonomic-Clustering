@@ -227,6 +227,8 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
     reference_names, reference_seqs = oligo.read_fasta_lists( options.unclustered )
 
+    ref_dict = create_seq_dict( reference_names, reference_seqs )
+
     rank_map = oligo.parse_rank_map( options.rank_map )
 
     created_clusters = {}
@@ -495,6 +497,28 @@ def get_repid_from_name( name ):
 
     return repid
 
+def create_seq_dict( names_list, seq_list, key = 'names' ):
+    """
+        Creates a dictionary from of list of names and a list of sequences,
+        which can be either name: sequence mappings, or sequence: [ key ] mappings.
+        :pre: names_list contains names, where the names[ i ] corresponds to sequences[ i ]
+        :post: returns a dictionary containing the appropriate mapping, as specified by the 
+               key parameter
+    """
+    return_dict = {}
+
+    for index in range( len( names_list ) ):
+        current_name = names_list[ index ]
+        current_seq  = seq_list[ index ]
+
+        if key == 'names':
+            return_dict[ current_name ] = current_seq
+        else:
+            if current_seq not in return_dict:
+                return_dict[ current_seq ] = list()
+            return_dict[ current_seq ].append( current_name )
+                
+    return return_dict
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
