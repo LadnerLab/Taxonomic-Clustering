@@ -325,13 +325,11 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
                         else:
                                 del sequence_dict[ current_name ]
-                    elif current_id not in rank_data:
-                        print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
 
     if missing_seqs:
         for name, seq in missing_seqs:
             best_cluster = seq_cluster_best_match( created_clusters.values(),
-                                                   kmer_dict[ name ], options.window_size
+                                                   kmer_dict[ name ], options.kmerSize
                                                  )
             best_cluster.add_sequence_and_its_kmers( name, seq, kmer_dict[ name ] )
 
