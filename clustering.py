@@ -331,8 +331,9 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
     if missing_seqs:
         for name, seq in missing_seqs:
             best_cluster = seq_cluster_best_match( created_clusters.values(),
-                                                   seq, options.window_size
+                                                   kmer_dict[ name ], options.window_size
                                                  )
+            best_cluster.add_sequence_and_its_kmers( name, seq, kmer_dict[ name ] )
 
     return created_clusters
 
@@ -591,11 +592,10 @@ def resolve_missing_taxid( name, sequence, combination_dict ):
         
     return return_id
 
-def seq_cluster_best_match( clusters, sequence, window_size ):
+def seq_cluster_best_match( clusters, seq_kmers, window_size ):
     best_match = 0.0
     best_clust = None
     
-    seq_kmers = oligo.subset_lists( sequence, window_size, 1 )
     cluster_list = list( clusters )
 
     for current_clust in cluster_list:
