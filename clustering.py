@@ -208,7 +208,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
         :returns clusters: dictionary of cluster: sequence pairings
     """
 
-    names = sequence_dict.keys()
+    names, sequences = seq_dict_to_names_and_seqs( sequence_dict )
 
     if options.start is None:
         start_ranks = [ 'FAMILY' ]
@@ -227,43 +227,30 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
     reference_names, reference_seqs = oligo.read_fasta_lists( options.unclustered )
 
-    ref_dict = create_seq_dict( reference_names, reference_seqs )
+    ref_dict          = create_seq_dict( reference_names, reference_seqs )
 
-    combined_dictionaries = combine_dicts( ref_dict, sequence_dict )
+    # inverted dictionaries for missing id resolutions
+    ref_dict_inverted = create_seq_dict( reference_names, reference_seqs, key = 'sequences' )
+    seq_dict_inverted = create_seq_dict( names, sequences, key = 'sequences' )
+
+    combined_dictionaries = combine_dicts( ref_dict_inverted, seq_dict_inverted )
 
     rank_map = oligo.parse_rank_map( options.rank_map )
 
     created_clusters = {}
     clusters_created = list()
 
+    missing_seqs = list()
+
     sequence_tax_id = set()
     for current_name, current_seq in sequence_dict.items():
-        added = False
         if 'TaxID' not in current_name and 'OX' not in current_name:
-            
-            taxid = resolve_missing_taxid( current_name, current_sequence, combined_dictionaries )
-            rep_id = get_repid_from_name( current_name )
+            taxid  = resolve_missing_taxid( current_name, current_seq, combined_dictionaries )
 
             if taxid:
                 sequence_tax_id.add( taxid )
             else:
-                 if 'NoID' not in created_clusters:
-                    noid_clusters = cluster.Cluster( 'NoID' )
-                    created_clusters[ 'NoID' ] = noid_clusters
-                 created_clusters[ 'NoID' ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
-
-
-            for current in reference_names:
-                if rep_id and rep_id in current:
-                    current_id = int( oligo.get_taxid_from_name( current ) )
-                    sequence_tax_id.add( current_id )
-                    added = True
-            if not added:
-                if 'NoID' not in created_clusters:
-                    noid_clusters = cluster.Cluster( 'NoID' )
-                    created_clusters[ 'NoID' ] = noid_clusters
-                created_clusters[ 'NoID' ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
-
+                missing_seqs.append( ( current_name, current_seq ) ) 
         else:
             sequence_tax_id.add( oligo.get_taxid_from_name( current_name ) )
 
@@ -318,11 +305,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 if current_id:
                     current_id = int( current_id )
                 else:
-                    rep_id = get_repid_from_name( current_name )
-
-                    for current in reference_names:
-                        if rep_id and rep_id in current:
-                            current_id = int( oligo.get_taxid_from_name( current ) )
+                    current_id = int( resolve_missing_taxid ) 
 
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
@@ -347,6 +330,9 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                             del sequence_dict[ current_name ]
                 elif current_id not in rank_data:
                     print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
+
+    if missing_seqs:
+        pass
 
     return created_clusters
 
@@ -587,6 +573,24 @@ def combine_dicts( *dicts ):
             else:
                 return_dict[ key ] = value if type( value ) == list else [ value ]
     return return_dict
+
+def resolve_missing_taxid( name, sequence, combination_dict ):
+    """
+        Attempts to find a missing taxID where one cannot be found in name
+    """
+    return_id = ''
+    names = combination_dict[ sequence ]
+
+    for current in names:
+        if 'RepID=' in current:
+            rep_id = get_repid_from_name( current )
+
+            if rep_id in current:
+                return oligo.get_taxid_from_name( current )
+
+        
+    return return_id
+
 
 
 def add_program_options( option_parser ):
