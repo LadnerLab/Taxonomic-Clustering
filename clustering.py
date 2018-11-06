@@ -229,16 +229,29 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
     ref_dict = create_seq_dict( reference_names, reference_seqs )
 
+    combined_dictionaries = combine_dicts( ref_dict, sequence_dict )
+
     rank_map = oligo.parse_rank_map( options.rank_map )
 
     created_clusters = {}
     clusters_created = list()
 
     sequence_tax_id = set()
-    for current_name in names:
+    for current_name, current_seq in sequence_dict.items():
         added = False
         if 'TaxID' not in current_name and 'OX' not in current_name:
+            
+            taxid = resolve_missing_taxid( current_name, current_sequence, combined_dictionaries )
             rep_id = get_repid_from_name( current_name )
+
+            if taxid:
+                sequence_tax_id.add( taxid )
+            else:
+                 if 'NoID' not in created_clusters:
+                    noid_clusters = cluster.Cluster( 'NoID' )
+                    created_clusters[ 'NoID' ] = noid_clusters
+                 created_clusters[ 'NoID' ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
+
 
             for current in reference_names:
                 if rep_id and rep_id in current:
@@ -552,6 +565,29 @@ def seq_dict_to_names_and_seqs( seq_dict, key = 'names' ):
         names, sequences = sequences, names
 
     return names, sequences
+
+def combine_dicts( *dicts ):
+    """
+        Combines two or more dictionaries into one
+        dictionary.
+
+        :note: created dictionary will contain
+               key: [ value ] mappings. If dictionaries
+               share a key, then their values will be combined 
+               into a list. 
+    """
+    return_dict = {}
+
+    for current_dict in dicts:
+        for key, value in current_dict.items():
+            if key in return_dict:
+                if type( return_dict[ key ] ) != list:
+                    return_dict[ key ] = [ return_dict[ key ] ]
+                return_dict[ key ].append( value )
+            else:
+                return_dict[ key ] = value if type( value ) == list else [ value ]
+    return return_dict
+
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
