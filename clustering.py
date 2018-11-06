@@ -305,13 +305,14 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 if current_id:
                     current_id = int( current_id )
                 else:
-                    current_id = int( resolve_missing_taxid( current_name, sequence_dict[ current_name ], combination_dict ) )
+                    current_id = int( resolve_missing_taxid( current_name, sequence_dict[ current_name ], combined_dictionaries ) )
 
                 current_id = check_for_id_in_merged_ids( merged_ids, current_id )
 
-                if current_id in rank_data and current_rank_data not in deleted_clusters:
+                if current_id:
                     current_rank_data = rank_data[ current_id ].lower()
 
+                if current_id in rank_data and current_rank_data not in deleted_clusters:
                     if current_rank_data not in created_clusters:
                         new_cluster = cluster.Cluster( current_rank_data )
                         created_clusters[ current_rank_data ] = new_cluster
