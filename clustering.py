@@ -305,33 +305,34 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 if current_id:
                     current_id = int( current_id )
                 else:
-                    current_id = int( resolve_missing_taxid( current_name, sequence_dict[ current_name ], combined_dictionaries ) )
-
-                current_id = check_for_id_in_merged_ids( merged_ids, current_id )
-
+                    current_id = resolve_missing_taxid( current_name, sequence_dict[ current_name ], combined_dictionaries )
                 if current_id:
+                    current_id = check_for_id_in_merged_ids( merged_ids, current_id )
                     current_rank_data = rank_data[ current_id ].lower()
 
-                if current_id in rank_data and current_rank_data not in deleted_clusters:
-                    if current_rank_data not in created_clusters:
-                        new_cluster = cluster.Cluster( current_rank_data )
-                        created_clusters[ current_rank_data ] = new_cluster
+                    if current_id in rank_data and current_rank_data not in deleted_clusters:
+                        if current_rank_data not in created_clusters:
+                            new_cluster = cluster.Cluster( current_rank_data )
+                            created_clusters[ current_rank_data ] = new_cluster
 
-                    created_clusters[ current_rank_data ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
+                        created_clusters[ current_rank_data ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
 
-                    if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
+                        if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
 
-                        # Put the items back in the pool of choices if our cluster becomes too large
-                        put_large_cluster_back_in_pool( created_clusters, sequence_dict, current_rank_data )
-                        deleted_clusters.append( current_rank_data )
+                            # Put the items back in the pool of choices if our cluster becomes too large
+                            put_large_cluster_back_in_pool( created_clusters, sequence_dict, current_rank_data )
+                            deleted_clusters.append( current_rank_data )
 
-                    else:
-                            del sequence_dict[ current_name ]
-                elif current_id not in rank_data:
-                    print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
+                        else:
+                                del sequence_dict[ current_name ]
+                    elif current_id not in rank_data:
+                        print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
 
     if missing_seqs:
-        pass
+        for name, seq in missing_seqs:
+            best_cluster = seq_cluster_best_match( created_clusters.values(),
+                                                   seq, options.window_size
+                                                 )
 
     return created_clusters
 
@@ -590,7 +591,21 @@ def resolve_missing_taxid( name, sequence, combination_dict ):
         
     return return_id
 
+def seq_cluster_best_match( clusters, sequence, window_size ):
+    best_match = 0.0
+    best_clust = None
+    
+    seq_kmers = oligo.subset_lists( sequence, window_size, 1 )
+    cluster_list = list( clusters )
 
+    for current_clust in cluster_list:
+        match = len( seq_kmers & current_clust.kmers ) / len( seq_kmers )
+
+        if match > best_match:
+            best_match = match
+            best_clust = current_clust
+    return current_clust
+        
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
