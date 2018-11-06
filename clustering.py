@@ -520,6 +520,39 @@ def create_seq_dict( names_list, seq_list, key = 'names' ):
                 
     return return_dict
 
+def seq_dict_to_names_and_seqs( seq_dict, key = 'names' ):
+    """
+        Accepts a dictionary containing seq: name 
+        or name: seq mappings, and returns a list containing
+        the sequence names, and a list containing the sequences themselves
+    
+        :pre: seq_dict contains a mapping of key: value
+              pairings, where key is a string and value is 
+              either a string, list, or set.
+        :post: returns a list of names and a list of sequences
+               when key is 'names', names will be the first list 
+               returned, and when key is 'sequences' 
+               sequences will be the first list returned
+    """
+    names     = list()
+    sequences = list()
+
+    for current_name, current_seq in seq_dict.items():
+        if type( current_seq ) == list or \
+            type( current_seq ) == set:
+
+            for item in current_seq:
+                names.append( current_name )
+                sequences.append( item )
+        else:
+            names.append( current_name )
+            sequences.append( current_seq )
+                
+    if key == 'sequences':
+        names, sequences = sequences, names
+
+    return names, sequences
+
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
     option_parser.add_option( '-l', '--lineage', help = "Taxonomic lineage file such as the one from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/" )
