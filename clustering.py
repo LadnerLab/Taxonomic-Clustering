@@ -26,10 +26,10 @@ def main():
 
     assert len( names ) == len( sequences )
 
-    sequence_dict = { names[ index ]: sequences[ index ] for index in range( num_seqs ) }
+    sequence_dict = create_seq_dict( names, sequences )
+
     ymer_dict = {}
     total_ymers = set()
-
 
     for current_seq in range( len( sequences ) ):
         current_ymers = frozenset( oligo.subset_lists_iter( sequences[ current_seq ], options.kmerSize, 1 ) )
@@ -207,7 +207,7 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
         :returns clusters: dictionary of cluster: sequence pairings
     """
 
-    names = sequence_dict.keys()
+    names, sequences = seq_dict_to_names_and_seqs( sequence_dict )
 
     if options.start is None:
         start_ranks = [ 'FAMILY' ]
@@ -226,28 +226,30 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
 
     reference_names, reference_seqs = oligo.read_fasta_lists( options.unclustered )
 
+    ref_dict = create_seq_dict( reference_names, reference_seqs )
+
+    # inverted dictionaries for missing id resolutions
+    ref_dict_inverted = create_seq_dict( reference_names, reference_seqs, key = 'sequences' )
+    seq_dict_inverted = create_seq_dict( names, sequences, key = 'sequences' )
+
+    combined_dictionaries = combine_dicts( ref_dict_inverted, seq_dict_inverted )
+
     rank_map = oligo.parse_rank_map( options.rank_map )
 
     created_clusters = {}
     clusters_created = list()
 
+    missing_seqs = list()
+
     sequence_tax_id = set()
-    for current_name in names:
-        added = False
+    for current_name, current_seq in sequence_dict.items():
         if 'TaxID' not in current_name and 'OX' not in current_name:
-            rep_id = get_repid_from_name( current_name )
+            taxid  = resolve_missing_taxid( current_name, current_seq, combined_dictionaries )
 
-            for current in reference_names:
-                if rep_id and rep_id in current:
-                    current_id = int( oligo.get_taxid_from_name( current ) )
-                    sequence_tax_id.add( current_id )
-                    added = True
-            if not added:
-                if 'NoID' not in created_clusters:
-                    noid_clusters = cluster.Cluster( 'NoID' )
-                    created_clusters[ 'NoID' ] = noid_clusters
-                created_clusters[ 'NoID' ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
-
+            if taxid:
+                sequence_tax_id.add( taxid )
+            else:
+                missing_seqs.append( ( current_name, current_seq ) ) 
         else:
             sequence_tax_id.add( oligo.get_taxid_from_name( current_name ) )
 
@@ -302,35 +304,33 @@ def cluster_taxonomically( options, sequence_dict, kmer_dict ):
                 if current_id:
                     current_id = int( current_id )
                 else:
-                    rep_id = get_repid_from_name( current_name )
-
-                    for current in reference_names:
-                        if rep_id and rep_id in current:
-                            current_id = int( oligo.get_taxid_from_name( current ) )
-
-                current_id = check_for_id_in_merged_ids( merged_ids, current_id )
-
+                    current_id = resolve_missing_taxid( current_name, sequence_dict[ current_name ], combined_dictionaries )
                 if current_id:
+                    current_id = check_for_id_in_merged_ids( merged_ids, current_id )
                     current_rank_data = rank_data[ current_id ].lower()
 
+                    if current_id in rank_data and current_rank_data not in deleted_clusters:
+                        if current_rank_data not in created_clusters:
+                            new_cluster = cluster.Cluster( current_rank_data )
+                            created_clusters[ current_rank_data ] = new_cluster
 
-                if current_id in rank_data and current_rank_data not in deleted_clusters:
-                    if current_rank_data not in created_clusters:
-                        new_cluster = cluster.Cluster( current_rank_data )
-                        created_clusters[ current_rank_data ] = new_cluster
+                        created_clusters[ current_rank_data ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
 
-                    created_clusters[ current_rank_data ].add_sequence_and_its_kmers( current_name, sequence_dict[ current_name ], kmer_dict[ current_name ] )
+                        if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
 
-                    if created_clusters[ current_rank_data ].get_num_kmers() > options.number and index < len( ranks ) - 1:
+                            # Put the items back in the pool of choices if our cluster becomes too large
+                            put_large_cluster_back_in_pool( created_clusters, sequence_dict, current_rank_data )
+                            deleted_clusters.append( current_rank_data )
 
-                        # Put the items back in the pool of choices if our cluster becomes too large
-                        put_large_cluster_back_in_pool( created_clusters, sequence_dict, current_rank_data )
-                        deleted_clusters.append( current_rank_data )
+                        else:
+                                del sequence_dict[ current_name ]
 
-                    else:
-                            del sequence_dict[ current_name ]
-                elif current_id not in rank_data:
-                    print( "WARNING: An ID was not found in rank_data, this is likely to produce incorrect results" )
+    if missing_seqs:
+        for name, seq in missing_seqs:
+            best_cluster = seq_cluster_best_match( created_clusters.values(),
+                                                   kmer_dict[ name ], options.kmerSize
+                                                 )
+            best_cluster.add_sequence_and_its_kmers( name, seq, kmer_dict[ name ] )
 
     return created_clusters
 
@@ -494,6 +494,115 @@ def get_repid_from_name( name ):
 
     return repid
 
+def create_seq_dict( names_list, seq_list, key = 'names' ):
+    """
+        Creates a dictionary from of list of names and a list of sequences,
+        which can be either name: sequence mappings, or sequence: [ key ] mappings.
+        :pre: names_list contains names, where the names[ i ] corresponds to sequences[ i ]
+        :post: returns a dictionary containing the appropriate mapping, as specified by the 
+               key parameter
+    """
+    return_dict = {}
+
+    for index in range( len( names_list ) ):
+        current_name = names_list[ index ]
+        current_seq  = seq_list[ index ]
+
+        if key == 'names':
+            return_dict[ current_name ] = current_seq
+        else:
+            if current_seq not in return_dict:
+                return_dict[ current_seq ] = list()
+            return_dict[ current_seq ].append( current_name )
+                
+    return return_dict
+
+def seq_dict_to_names_and_seqs( seq_dict, key = 'names' ):
+    """
+        Accepts a dictionary containing seq: name 
+        or name: seq mappings, and returns a list containing
+        the sequence names, and a list containing the sequences themselves
+    
+        :pre: seq_dict contains a mapping of key: value
+              pairings, where key is a string and value is 
+              either a string, list, or set.
+        :post: returns a list of names and a list of sequences
+               when key is 'names', names will be the first list 
+               returned, and when key is 'sequences' 
+               sequences will be the first list returned
+    """
+    names     = list()
+    sequences = list()
+
+    for current_name, current_seq in seq_dict.items():
+        if type( current_seq ) == list or \
+            type( current_seq ) == set:
+
+            for item in current_seq:
+                names.append( current_name )
+                sequences.append( item )
+        else:
+            names.append( current_name )
+            sequences.append( current_seq )
+                
+    if key == 'sequences':
+        names, sequences = sequences, names
+
+    return names, sequences
+
+def combine_dicts( *dicts ):
+    """
+        Combines two or more dictionaries into one
+        dictionary.
+
+        :note: created dictionary will contain
+               key: [ value ] mappings. If dictionaries
+               share a key, then their values will be combined 
+               into a list. 
+    """
+    return_dict = {}
+
+    for current_dict in dicts:
+        for key, value in current_dict.items():
+            if key in return_dict:
+                if type( return_dict[ key ] ) != list:
+                    return_dict[ key ] = [ return_dict[ key ] ]
+                return_dict[ key ].append( value )
+            else:
+                return_dict[ key ] = value if type( value ) == list else [ value ]
+    return return_dict
+
+def resolve_missing_taxid( name, sequence, combination_dict ):
+    """
+        Attempts to find a missing taxID where one cannot be found in name
+    """
+    return_id = ''
+    names = combination_dict[ sequence ]
+
+    for current in names:
+        if 'RepID=' in current:
+            rep_id = get_repid_from_name( current )
+
+            if rep_id in current:
+                return oligo.get_taxid_from_name( current )
+
+        
+    return return_id
+
+def seq_cluster_best_match( clusters, seq_kmers, window_size ):
+    best_match = 0.0
+    best_clust = None
+    
+    cluster_list = list( clusters )
+
+    for current_clust in cluster_list:
+        match = len( seq_kmers & current_clust.kmers ) / len( seq_kmers )
+
+        if match > best_match:
+            best_match = match
+            best_clust = current_clust
+    return current_clust
+        
 
 def add_program_options( option_parser ):
     option_parser.add_option( '-q', '--query', help = "Fasta query file to read sequences from and do ordering of. [None, Required]" )
